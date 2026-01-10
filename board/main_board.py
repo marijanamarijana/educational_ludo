@@ -33,7 +33,7 @@ FONT = pygame.font.SysFont(None, 32)
 BIG_FONT = pygame.font.SysFont(None, 48)
 
 
-def draw_board(surface, w, h):
+def draw_board(surface, w, h, players):
     surface.fill(WHITE)
 
     margin = int(min(w, h) * MARGIN_RATIO)
@@ -54,7 +54,7 @@ def draw_board(surface, w, h):
             pygame.draw.rect(surface, GRAY, rect)
             pygame.draw.rect(surface, BLACK, rect, 1)
 
-    draw_homes(surface, board_x, board_y, cell)
+    draw_homes(surface, board_x, board_y, cell, players)
     draw_secondary_colors(surface, board_x, board_y, cell)
     draw_win_paths(surface, board_x, board_y, cell)
     draw_center_triangles(surface, board_x, board_y, cell)
@@ -62,7 +62,7 @@ def draw_board(surface, w, h):
     return board_x, board_y, cell
 
 
-def draw_homes(surface, board_x, board_y, cell):
+def draw_homes(surface, board_x, board_y, cell, players):
     homes = [
         (0, 0, RED),
         (9, 0, GREEN),
@@ -86,7 +86,9 @@ def draw_homes(surface, board_x, board_y, cell):
         pygame.draw.circle(surface, BLACK, (center_x, center_y), radius, 8)
         pygame.draw.circle(surface, WHITE, (center_x, center_y), radius, 3)
 
-        draw_players_start_positions(surface, rect, color)
+        for p in players:
+            if p.color == color:
+                draw_players_positions(surface, rect, color, p)
 
     center_rect = pygame.Rect(
         board_x + 6 * cell,
@@ -159,7 +161,54 @@ def draw_center_triangles(surface, board_x, board_y, cell):
     pygame.draw.rect(surface, BLACK, pygame.Rect(cx, cy, size, size), 2)
 
 
-def draw_players_start_positions(surface, rect, color):
+def get_triangle_vertices(color, bx, by, cell):
+    cx = bx + 6 * cell
+    cy = by + 6 * cell
+    size = 3 * cell
+
+    center = (cx + size // 2, cy + size // 2)
+
+    top_left = (cx, cy)
+    top_right = (cx + size, cy)
+    bottom_right = (cx + size, cy + size)
+    bottom_left = (cx, cy + size)
+
+    if color == GREEN:
+        return [top_left, top_right, center]
+    elif color == YELLOW:
+        return [top_right, bottom_right, center]
+    elif color == BLUE:
+        return [bottom_left, bottom_right, center]
+    else:
+        return [top_left, bottom_left, center]
+
+
+def points_in_triangle(v0, v1, v2, n):
+    positions = []
+
+    for i in range(1, 3):
+        for j in range(1, 3):
+            if len(positions) == n:
+                return positions
+
+            a = i / 4
+            b = j / 4
+            c = 1 - a - b
+
+            if c > 0:
+                x = a * v0[0] + b * v1[0] + c * v2[0]
+                y = a * v0[1] + b * v1[1] + c * v2[1]
+                positions.append((x, y))
+
+    return positions
+
+
+def get_triangle_positions(color, bx, by, cell):
+    verts = get_triangle_vertices(color, bx, by, cell)
+    return points_in_triangle(verts[0], verts[1], verts[2], 4)
+
+
+def draw_players_positions(surface, rect, color, player=None):
     cx, cy, w, h = rect
     radius = w // 10
 
@@ -170,7 +219,10 @@ def draw_players_start_positions(surface, rect, color):
         (cx + w * 0.7, cy + h * 0.7),
     ]
 
-    for x, y in positions:
+    for i, (x, y) in enumerate(positions):
+        if player and player.pawns[i] != -1:
+            continue
+
         pygame.draw.circle(surface, WHITE, (int(x), int(y)), radius + 3)
         pygame.draw.circle(surface, color, (int(x), int(y)), radius)
         pygame.draw.circle(surface, BLACK, (int(x), int(y)), radius, 2)
