@@ -3,9 +3,9 @@ import pygame
 pygame.init()
 
 WIDTH, HEIGHT = 800, 800
-MARGIN_RATIO = 0.08
+MARGIN_RATIO = 0.14
 GRID_SIZE = 15
-FPS = 60
+FPS = 13
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -32,16 +32,17 @@ clock = pygame.time.Clock()
 FONT = pygame.font.SysFont(None, 32)
 BIG_FONT = pygame.font.SysFont(None, 48)
 
+w, h = screen.get_size()
+margin = int(min(w, h) * MARGIN_RATIO)
+board_size = min(w, h) - 2 * margin
+cell = board_size // GRID_SIZE
+board_x = (w - board_size) // 2
+board_y = (h - board_size) // 2
 
-def draw_board(surface, w, h, players):
-    surface.fill(WHITE)
+def draw_board(players):
+    global w, h, cell, board_x, board_y
 
-    margin = int(min(w, h) * MARGIN_RATIO)
-    board_size = min(w, h) - 2 * margin
-    cell = board_size // GRID_SIZE
-
-    board_x = (w - board_size) // 2
-    board_y = (h - board_size) // 2
+    screen.fill(WHITE)
 
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
@@ -51,18 +52,44 @@ def draw_board(surface, w, h, players):
                 cell,
                 cell
             )
-            pygame.draw.rect(surface, GRAY, rect)
-            pygame.draw.rect(surface, BLACK, rect, 1)
+            pygame.draw.rect(screen, GRAY, rect)
+            pygame.draw.rect(screen, BLACK, rect, 1)
 
-    draw_homes(surface, board_x, board_y, cell, players)
-    draw_secondary_colors(surface, board_x, board_y, cell)
-    draw_win_paths(surface, board_x, board_y, cell)
-    draw_center_triangles(surface, board_x, board_y, cell)
+    draw_homes(screen, board_x, board_y, players)
+    draw_secondary_colors(screen, board_x, board_y)
+    draw_win_paths(screen, board_x, board_y)
+    draw_center_triangles(screen, board_x, board_y)
 
-    return board_x, board_y, cell
+    return board_x, board_y
 
 
-def draw_homes(surface, board_x, board_y, cell, players):
+def draw_dice_placeholder(surface, rect, color):
+    x = rect.right - 3*cell
+
+    if color == RED or color == GREEN:
+        y = rect.top - 3*cell
+    if color == BLUE or color == YELLOW:
+        y = rect.bottom
+
+    outline = pygame.Rect(
+        x,
+        y,
+        cell * 3,
+        cell * 3
+    )
+
+    inside = pygame.Rect(
+        x+cell//2,
+        y+cell//2,
+        cell * 2,
+        cell * 2
+    )
+
+    pygame.draw.rect(surface, BLACK, outline)
+    pygame.draw.rect(surface, WHITE, inside)
+
+
+def draw_homes(surface, board_x, board_y, players):
     homes = [
         (0, 0, RED),
         (9, 0, GREEN),
@@ -89,6 +116,8 @@ def draw_homes(surface, board_x, board_y, cell, players):
         for p in players:
             if p.color == color:
                 draw_players_positions(surface, rect, color, p)
+                draw_dice_placeholder(surface, rect, color)
+
 
     center_rect = pygame.Rect(
         board_x + 6 * cell,
@@ -98,6 +127,7 @@ def draw_homes(surface, board_x, board_y, cell, players):
     )
     pygame.draw.rect(surface, WHITE, center_rect)
     pygame.draw.rect(surface, BLACK, center_rect, 2)
+    return
 
 
 def color_cells(dictionary, surface, board_x, board_y, cell):
@@ -108,7 +138,7 @@ def color_cells(dictionary, surface, board_x, board_y, cell):
             pygame.draw.rect(surface, BLACK, rect, 1)
 
 
-def draw_win_paths(surface, board_x, board_y, cell):
+def draw_win_paths(surface, board_x, board_y):
     win_paths = {
         GREEN:    [(7, i) for i in range(1, 6)] + [(8, 1)],
         YELLOW:  [(i, 7) for i in range(9, 14)] + [(13, 8)],
@@ -127,7 +157,7 @@ def draw_win_paths(surface, board_x, board_y, cell):
     draw_arrows(screen, arrow_cells, board_x, board_y, cell)
 
 
-def draw_secondary_colors(surface, board_x, board_y, cell):
+def draw_secondary_colors(surface, board_x, board_y):
     secondary_color_paths = {
         LIGHT_GREEN: [(x, y) for x in range(6, 9) for y in range(0, 6)],
         LIGHT_YELLOW: [(x, y) for x in range(9, 15) for y in range(6, 9)],
@@ -138,7 +168,7 @@ def draw_secondary_colors(surface, board_x, board_y, cell):
     color_cells(secondary_color_paths, surface, board_x, board_y, cell)
 
 
-def draw_center_triangles(surface, board_x, board_y, cell):
+def draw_center_triangles(surface, board_x, board_y):
     cx = board_x + 6 * cell
     cy = board_y + 6 * cell
     size = 3 * cell
@@ -161,7 +191,7 @@ def draw_center_triangles(surface, board_x, board_y, cell):
     pygame.draw.rect(surface, BLACK, pygame.Rect(cx, cy, size, size), 2)
 
 
-def get_triangle_vertices(color, bx, by, cell):
+def get_triangle_vertices(color, bx, by):
     cx = bx + 6 * cell
     cy = by + 6 * cell
     size = 3 * cell
@@ -203,8 +233,8 @@ def points_in_triangle(v0, v1, v2, n):
     return positions
 
 
-def get_triangle_positions(color, bx, by, cell):
-    verts = get_triangle_vertices(color, bx, by, cell)
+def get_triangle_positions(color, bx, by):
+    verts = get_triangle_vertices(color, bx, by)
     return points_in_triangle(verts[0], verts[1], verts[2], 4)
 
 

@@ -32,8 +32,8 @@ class Player:
         else:
             self.pawns[i] = new_pos
 
-    def draw(self, surface, bx, by, cell):
-        triangle_positions = get_triangle_positions(self.color, bx, by, cell)
+    def draw(self, surface, bx, by):
+        triangle_positions = get_triangle_positions(self.color, bx, by)
         t_idx = 0
 
         for i, idx in enumerate(self.pawns):

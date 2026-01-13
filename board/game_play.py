@@ -1,9 +1,9 @@
 import sys
-import random
+
+from board.dice import roll_dice, draw_dice
 from board.players import Player
 from board.states import *
-from board.main_board import *
-
+from board.main_board import draw_board
 
 def draw_main_surface():
     state = GameState.SELECT_PLAYERS
@@ -13,7 +13,9 @@ def draw_main_surface():
 
     name_input = ""
     available_colors = PLAYER_COLORS.copy()
-    dice = 0
+    moves = -1
+    waiting_for_roll = False
+    first = True
     color_boxes = []
     winner = None
 
@@ -52,10 +54,18 @@ def draw_main_surface():
                                 state = GameState.PLAYING
 
             elif state == GameState.PLAYING:
+                # draw the board after choosing players
+                if first and players:
+                    bx, by = draw_board(players)
+                    draw_dice(screen, players[current_player_index].color, moves)
+                    first = False
+
+                # TODO: click on dice instead of pressing space?
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                    dice = random.randint(1, 6)
+                    moves = roll_dice(screen, players[current_player_index].color)
                     current_player = players[current_player_index]
-                    current_player.move(dice)
+                    # TODO: choose which pawn to move and dont update dice image until chosen
+                    current_player.move(moves)
 
                     if current_player.has_won():
                         winner = current_player
@@ -63,12 +73,16 @@ def draw_main_surface():
                     else:
                         current_player_index = (current_player_index + 1) % len(players)
 
+                    waiting_for_roll = False
+
             elif state == GameState.WIN:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
 
-        w, h = screen.get_size()
-        bx, by, cell = draw_board(screen, w, h, players)
+        if not waiting_for_roll and players:
+            bx, by = draw_board(players)
+            draw_dice(screen, players[current_player_index].color, moves)
+            waiting_for_roll = True
 
         if state == GameState.SELECT_PLAYERS:
             draw_screen_when_choosing()
@@ -85,16 +99,16 @@ def draw_main_surface():
             color_boxes = draw_color_choices(screen, available_colors)
 
         elif state == GameState.PLAYING:
-
             for p in players:
-                p.draw(screen, bx, by, cell)
+                p.draw(screen, bx, by)
 
             draw_text(screen, f"Turn: {players[current_player_index].name}", 20, 20)
             draw_text(screen, "Press SPACE to roll dice", 20, 50)
-            draw_text(screen, f"Dice: {dice}", 20, 80)
+            draw_text(screen, f"Dice: {moves}", 20, 80)
 
         elif state == GameState.WIN:
             draw_win_screen(winner)
+
 
         pygame.display.flip()
 
