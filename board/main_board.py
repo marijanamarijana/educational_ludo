@@ -73,7 +73,6 @@ def draw_dice_placeholder(surface, rect, color):
         y = rect.bottom
 
     outline = pygame.Rect(x, y, cell * 3, cell * 3)
-
     inside = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
 
     pygame.draw.rect(surface, BLACK, outline)
