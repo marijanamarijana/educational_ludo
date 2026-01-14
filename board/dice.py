@@ -5,6 +5,7 @@ from board.main_board import GREEN, YELLOW
 dice_images = []
 dice_rolling_images = []
 
+
 def load_images():
     for num in range(1, 7):
         dice_image = pygame.image.load('images/dice/' + str(num) + '.png')
@@ -18,7 +19,7 @@ def load_images():
 
 
 def draw_dice(surface, color, num):
-    gx,gy,y = get_position(color)
+    gx, gy, y = get_position(color)
     x = board_x + gx * cell + cell * 3
 
     if num == -1:
@@ -26,8 +27,11 @@ def draw_dice(surface, color, num):
 
     dice_image = dice_images[num-1]
     dice_image = pygame.transform.scale(dice_image, (cell * 2, cell * 2))
+
+    dice_rect = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
+
     surface.blit(dice_image, (x + cell // 2, y + cell // 2))
-    pygame.display.flip()
+    return dice_rect
 
 
 def roll_dice(surface, color):
@@ -51,10 +55,11 @@ def roll_dice(surface, color):
     draw_dice(surface, color, num)
     return num
 
+
 def get_position(color):
     if color == RED:
         gx, gy = (0,0)
-        y = board_y + gy * cell + cell * 3
+        y = board_y - cell * 3
     if color == GREEN:
         gx, gy = (9,0)
         y = board_y - cell * 3

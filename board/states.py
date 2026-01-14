@@ -40,5 +40,4 @@ WIN_PATHS = {
 
 
 def get_full_path(color):
-    print(build_color_path(color) + WIN_PATHS[color])
     return build_color_path(color) + WIN_PATHS[color]

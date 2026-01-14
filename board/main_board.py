@@ -2,7 +2,7 @@ import pygame
 
 pygame.init()
 
-WIDTH, HEIGHT = 800, 800
+WIDTH, HEIGHT = 900, 800
 MARGIN_RATIO = 0.14
 GRID_SIZE = 15
 FPS = 13
@@ -39,6 +39,7 @@ cell = board_size // GRID_SIZE
 board_x = (w - board_size) // 2
 board_y = (h - board_size) // 2
 
+
 def draw_board(players):
     global w, h, cell, board_x, board_y
 
@@ -64,26 +65,16 @@ def draw_board(players):
 
 
 def draw_dice_placeholder(surface, rect, color):
-    x = rect.right - 3*cell
+    x = rect.right - 3 * cell
 
     if color == RED or color == GREEN:
-        y = rect.top - 3*cell
+        y = rect.top - 3 * cell
     if color == BLUE or color == YELLOW:
         y = rect.bottom
 
-    outline = pygame.Rect(
-        x,
-        y,
-        cell * 3,
-        cell * 3
-    )
+    outline = pygame.Rect(x, y, cell * 3, cell * 3)
 
-    inside = pygame.Rect(
-        x+cell//2,
-        y+cell//2,
-        cell * 2,
-        cell * 2
-    )
+    inside = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
 
     pygame.draw.rect(surface, BLACK, outline)
     pygame.draw.rect(surface, WHITE, inside)
@@ -117,7 +108,6 @@ def draw_homes(surface, board_x, board_y, players):
             if p.color == color:
                 draw_players_positions(surface, rect, color, p)
                 draw_dice_placeholder(surface, rect, color)
-
 
     center_rect = pygame.Rect(
         board_x + 6 * cell,
