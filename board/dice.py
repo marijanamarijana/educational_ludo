@@ -40,16 +40,15 @@ def roll_dice(surface, color):
     gx, gy, y = get_position(color)
     x = board_x + gx * cell + cell * 3
 
-    # remove the previous dice image so it doesn't show during animation
-    inside = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
-    pygame.draw.rect(surface, WHITE, inside)
-
-    clean_surface = surface.copy()
     while is_rolling:
-        surface.blit(clean_surface, (0,0)) # removes previous roll image so they don't stack up
+        # cover the previous dice image so it doesn't show during animation
+        inside = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
+        pygame.draw.rect(surface, WHITE, inside)
+
         surface.blit(dice_rolling_images[rolling_images_counter], (x + cell // 2, y + cell // 2))
         pygame.display.update()
         pygame.time.delay(50)
+
         rolling_images_counter += 1
         if rolling_images_counter >= 8:
             is_rolling = False
