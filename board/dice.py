@@ -41,7 +41,7 @@ def roll_dice(surface, color):
     x = board_x + gx * cell + cell * 3
 
     while is_rolling:
-        # cover the previous dice image so it doesn't show during animation
+        # TODO: cover the previous dice image so it doesn't show during animation
         inside = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
         pygame.draw.rect(surface, WHITE, inside)
 
@@ -62,16 +62,16 @@ def roll_dice(surface, color):
 
 def get_position(color):
     if color == RED:
-        gx, gy = (0,0)
+        gx, gy = (0, 0)
         y = board_y - cell * 3
     if color == GREEN:
-        gx, gy = (9,0)
+        gx, gy = (9, 0)
         y = board_y - cell * 3
     if color == BLUE:
-        gx, gy = (0,9)
+        gx, gy = (0, 9)
         y = board_y + gy * cell + cell * 6
     if color == YELLOW:
-        gx, gy = (9,9)
+        gx, gy = (9, 9)
         y = board_y + gy * cell + cell * 6
 
     return gx, gy, y
