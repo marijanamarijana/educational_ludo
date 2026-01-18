@@ -40,7 +40,7 @@ board_x = (w - board_size) // 2
 board_y = (h - board_size) // 2
 
 
-def draw_board(players):
+def draw_board(players, color):
     global w, h, cell, board_x, board_y
 
     screen.fill(WHITE)
@@ -60,20 +60,31 @@ def draw_board(players):
     draw_secondary_colors(screen, board_x, board_y)
     draw_win_paths(screen, board_x, board_y)
     draw_center_triangles(screen, board_x, board_y)
+    quiz_rect = draw_quiz_rect(color)
 
-    return board_x, board_y
+    return board_x, board_y, quiz_rect
+
+
+def draw_quiz_rect(color):
+    quiz_border = pygame.Rect(board_x + 7.8 * cell, board_y - 2.3 * cell, 2.5 * cell, 2 * cell)
+    quiz_rect = pygame.Rect(board_x + 7.8 * cell + 2, board_y - 2.3 * cell + 2, 2.5 * cell - 4, 2 * cell - 4)
+    pygame.draw.rect(screen, BLACK, quiz_border)
+    pygame.draw.rect(screen, color, quiz_rect)
+    draw_text(screen, "КВИЗ", quiz_rect.centerx, quiz_rect.centery)
+
+    return quiz_rect
 
 
 def draw_dice_placeholder(surface, rect, color):
-    x = rect.right - 3 * cell
+    x = rect.right - 2.5 * cell
 
     if color == RED or color == GREEN:
-        y = rect.top - 3 * cell
+        y = rect.top - 2.5 * cell
     if color == BLUE or color == YELLOW:
         y = rect.bottom
 
-    outline = pygame.Rect(x, y, cell * 3, cell * 3)
-    inside = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
+    outline = pygame.Rect(x, y, cell * 2.5, cell * 2.5)
+    inside = pygame.Rect(x + 0.25 * cell, y + 0.25 * cell, cell * 2, cell * 2)
 
     pygame.draw.rect(surface, BLACK, outline)
     pygame.draw.rect(surface, WHITE, inside)
@@ -129,10 +140,10 @@ def color_cells(dictionary, surface, board_x, board_y, cell):
 
 def draw_win_paths(surface, board_x, board_y):
     win_paths = {
-        GREEN:    [(7, i) for i in range(1, 6)] + [(8, 1)],
-        YELLOW:  [(i, 7) for i in range(9, 14)] + [(13, 8)],
+        GREEN: [(7, i) for i in range(1, 6)] + [(8, 1)],
+        YELLOW: [(i, 7) for i in range(9, 14)] + [(13, 8)],
         BLUE: [(7, i) for i in range(9, 14)] + [(6, 13)],
-        RED:   [(i, 7) for i in range(1, 6)] + [(1, 6)],
+        RED: [(i, 7) for i in range(1, 6)] + [(1, 6)],
     }
 
     arrow_cells = [
@@ -276,14 +287,22 @@ def draw_arrow(surface, cell_rect, direction):
     pygame.draw.polygon(surface, WHITE, points, 2)
 
 
-def draw_text(surface, text, x, y, size=32, color=BLACK):
+def draw_text(surface, text, x, y, size=32, color=BLACK, center=True):
     font = pygame.font.SysFont(None, size)
-    surface.blit(font.render(text, True, color), (x, y))
+    text = font.render(text, True, color)
+    text_rect = text.get_rect()
+
+    if center:
+        text_rect.center = (x, y)
+    else:
+        text_rect.left = x
+        text_rect.top = y
+    surface.blit(text, text_rect)
 
 
 def draw_color_choices(surface, available_colors):
     boxes = []
-    start_x = WIDTH // 2 - 200
+    start_x = WIDTH // 2 - 180
     y = HEIGHT // 2
 
     for i, color in enumerate(PLAYER_COLORS):

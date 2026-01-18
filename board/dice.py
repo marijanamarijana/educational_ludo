@@ -20,12 +20,12 @@ def load_images():
 
 def draw_dice(surface, color, num):
     gx, gy, y = get_position(color)
-    x = board_x + gx * cell + cell * 3
+    x = board_x + gx * cell + cell * 3.25
 
     if num == -1:
         num = 1
 
-    dice_image = dice_images[num-1]
+    dice_image = dice_images[abs(num) - 1]
     dice_rect = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
 
     surface.blit(dice_image, (x + cell // 2, y + cell // 2))
@@ -38,10 +38,10 @@ def roll_dice(surface, color):
     rolling_images_counter = 0
 
     gx, gy, y = get_position(color)
-    x = board_x + gx * cell + cell * 3
+    x = board_x + gx * cell + cell * 3.25
 
     while is_rolling:
-        # TODO: cover the previous dice image so it doesn't show during animation
+        # cover the previous dice image so it doesn't show during animation
         inside = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
         pygame.draw.rect(surface, WHITE, inside)
 
@@ -63,15 +63,15 @@ def roll_dice(surface, color):
 def get_position(color):
     if color == RED:
         gx, gy = (0, 0)
-        y = board_y - cell * 3
+        y = board_y - cell * 3 + cell * 0.25
     if color == GREEN:
         gx, gy = (9, 0)
-        y = board_y - cell * 3
+        y = board_y - cell * 3 + cell * 0.25
     if color == BLUE:
         gx, gy = (0, 9)
-        y = board_y + gy * cell + cell * 6
+        y = board_y + gy * cell + cell * 6 - cell * 0.25
     if color == YELLOW:
         gx, gy = (9, 9)
-        y = board_y + gy * cell + cell * 6
+        y = board_y + gy * cell + cell * 6 - cell * 0.25
 
     return gx, gy, y
