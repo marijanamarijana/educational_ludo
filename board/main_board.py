@@ -287,9 +287,9 @@ def draw_arrow(surface, cell_rect, direction):
     pygame.draw.polygon(surface, WHITE, points, 2)
 
 
-def draw_text(surface, text, x, y, size=32, color=BLACK, center=True):
-    font = pygame.font.SysFont(None, size)
-    text = font.render(text, True, color)
+def draw_text(surface, text, x, y, size=26, color=BLACK, center=True):
+    font = pygame.font.SysFont("Verdana", size)  # Arial can also be used as most computers have it and support cyrillic
+    text = font.render(text, False, color)
     text_rect = text.get_rect()
 
     if center:

@@ -1,8 +1,6 @@
 import random
 import sys
-
 import pygame
-
 from board.dice import roll_dice, draw_dice
 from board.players import Player
 from board.states import *
@@ -81,7 +79,6 @@ def draw_main_surface():
                                                                                             current_player_index, moves,
                                                                                             state)
 
-
             elif state == GameState.QUIZ:
                 if event.type == pygame.KEYDOWN and event.unicode.isdigit():
                     if int(event.unicode) < 1 or int(event.unicode) > 6:
@@ -112,11 +109,11 @@ def draw_main_surface():
 
         if state == GameState.SELECT_PLAYERS:
             draw_screen_when_choosing()
-            draw_text(screen, "Внеси 2, 3 или 4 за број на играчи.", WIDTH // 2, HEIGHT // 2 - 40, 40)
+            draw_text(screen, "Внеси 2, 3 или 4 за број на играчи.", WIDTH // 2, HEIGHT // 2 - 40, 34)
 
         elif state == GameState.ENTER_NAME:
             draw_screen_when_choosing()
-            draw_text(screen, f"Внеси име за играчот {len(players) + 1}", WIDTH // 2, HEIGHT // 2 - 40, 40)
+            draw_text(screen, f"Внеси име за играчот {len(players) + 1}", WIDTH // 2, HEIGHT // 2 - 40, 34)
             draw_text(screen, name_input + "|", WIDTH // 2, HEIGHT // 2 + 20, 40)
 
         elif state == GameState.CHOOSE_COLOR:
@@ -134,10 +131,10 @@ def draw_main_surface():
 
         elif state == GameState.QUIZ:
             draw_screen_when_choosing()
-            draw_text(screen, f"Избравте да решавате квиз!", WIDTH // 2, HEIGHT // 2 - 140, 40)
-            draw_text(screen, f"Внеси број на чекори за коишто сакаш да се поместиш.", WIDTH // 2, HEIGHT // 2 - 80, 40)
-            draw_text(screen, f"Доколку одговориш точно се движиш напред,", WIDTH // 2, HEIGHT // 2 - 20, 40, GREEN)
-            draw_text(screen, f"но доколку одговориш погрешно се движиш назад.", WIDTH // 2, HEIGHT // 2 + 40, 40, RED)
+            draw_text(screen, f"Избравте да решавате квиз!", WIDTH // 2, HEIGHT // 2 - 140, 26)
+            draw_text(screen, f"Внеси број на чекори за коишто сакаш да се поместиш.", WIDTH // 2, HEIGHT // 2 - 80, 26)
+            draw_text(screen, f"Доколку одговориш точно се движиш напред,", WIDTH // 2, HEIGHT // 2 - 20, 26, GREEN)
+            draw_text(screen, f"но доколку одговориш погрешно се движиш назад.", WIDTH // 2, HEIGHT // 2 + 40, 26, RED)
 
         elif state == GameState.WIN:
             draw_win_screen(winner)
@@ -186,15 +183,15 @@ def draw_quiz(questions):
     x = 60
 
     screen.fill(WHITE)
-    draw_text(screen, f"Избери ја соодветната опција за наведеното сценарио.", WIDTH // 2, 180, 40)
+    draw_text(screen, f"Избери ја соодветната опција за наведеното сценарио.", WIDTH // 2, 180, 28)
 
     if len(question) > 60:
-        draw_text(screen, f"{question[:55]}", WIDTH // 2, 250, 35)
-        draw_text(screen, f"{question[55:]}", WIDTH // 2, 280, 35)
+        draw_text(screen, f"{question[:55]}", WIDTH // 2, 250, 28)
+        draw_text(screen, f"{question[55:]}", WIDTH // 2, 280, 28)
     else:
-        draw_text(screen, f"{question}", WIDTH // 2, 250, 35)
+        draw_text(screen, f"{question}", WIDTH // 2, 250, 28)
 
-    draw_text(screen, f"Внеси го бројот на точниот одговор.", x, 350, 32, RED, center=False)
+    draw_text(screen, f"Внеси го бројот на точниот одговор.", x, 350, 28, RED, center=False)
 
     option_y = 390
     for i in range(len(options)):
@@ -220,5 +217,4 @@ def draw_quiz(questions):
             if event.type == pygame.KEYDOWN and event.key == pygame.K_4 and len(options) > 3:
                 selected = 3
 
-    print(selected, answer)
     return selected == answer
