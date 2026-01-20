@@ -23,6 +23,10 @@ class Player:
 
         new_pos = self.pawns[i] + dice
 
+        if new_pos < 0:
+            self.pawns[i] = 0
+            return
+
         if new_pos >= len(self.path) - 1:
             self.pawns[i] = len(self.path) - 1
             self.finished[i] = True
