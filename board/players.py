@@ -57,3 +57,6 @@ class Player:
 
     def has_won(self):
         return all(self.finished)
+
+    def has_active_pawn(self):
+        return any(pawn != -1 for pawn in self.pawns)

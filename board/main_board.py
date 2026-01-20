@@ -300,6 +300,17 @@ def draw_text(surface, text, x, y, size=26, color=BLACK, center=True):
     surface.blit(text, text_rect)
 
 
+def draw_text_with_box_around(surface, text, center_x, center_y, padding=10, text_size=26, text_color=WHITE, box_color=BLACK):
+    font = pygame.font.SysFont("Verdana", text_size)
+    text_surf = font.render(text, False, text_color)
+    text_rect = text_surf.get_rect(center=(center_x, center_y))
+
+    box_rect = text_rect.inflate(padding * 2, padding * 2)
+    pygame.draw.rect(surface, box_color, box_rect, border_radius=8)
+
+    surface.blit(text_surf, text_rect)
+
+
 def draw_color_choices(surface, available_colors):
     boxes = []
     start_x = WIDTH // 2 - 180

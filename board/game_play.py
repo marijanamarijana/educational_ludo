@@ -69,8 +69,15 @@ def draw_main_surface():
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if quiz_rect.collidepoint(event.pos):
-                        # TODO: if player doesn't have an active pawn don't let him start a quiz
-                        state = GameState.QUIZ
+                        current_player = players[current_player_index]
+
+                        if current_player.has_active_pawn():
+                            state = GameState.QUIZ
+                        else:
+                            draw_text_with_box_around(screen, "Прво мораш да имаш веќе извадено пионче на таблата!",
+                                      WIDTH // 2, HEIGHT // 2 + 120, text_size=26, text_color=RED)
+                            draw_text_with_box_around(screen, "Кликни на коцката за да продолжиш со игра!",
+                                      WIDTH // 2, HEIGHT // 2 + 180, text_size=26, text_color=RED)
 
                     if dice_rect and dice_rect.collidepoint(event.pos):
                         moves = roll_dice(screen, players[current_player_index].color)
@@ -82,6 +89,10 @@ def draw_main_surface():
             elif state == GameState.QUIZ:
                 if event.type == pygame.KEYDOWN and event.unicode.isdigit():
                     if int(event.unicode) < 1 or int(event.unicode) > 6:
+                        continue
+
+                    if not players[current_player_index].has_active_pawn():
+                        state = GameState.PLAYING
                         continue
 
                     quiz_moves += int(event.unicode)
