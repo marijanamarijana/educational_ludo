@@ -28,7 +28,13 @@ def draw_dice(surface, color, num):
     dice_image = dice_images[abs(num) - 1]
     dice_rect = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
 
-    surface.blit(dice_image, (x + cell // 2, y + cell // 2))
+    standard_padding = 5
+    color_frame_thickness = 6
+
+    frame_rect = dice_rect.inflate(standard_padding * 2, standard_padding * 2)
+    pygame.draw.rect(surface, color, frame_rect, color_frame_thickness, border_radius=12)
+
+    surface.blit(dice_image, dice_rect.topleft)
     pygame.display.update()
     return dice_rect
 

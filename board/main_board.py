@@ -83,11 +83,14 @@ def draw_dice_placeholder(surface, rect, color):
     if color == BLUE or color == YELLOW:
         y = rect.bottom
 
-    outline = pygame.Rect(x, y, cell * 2.5, cell * 2.5)
-    inside = pygame.Rect(x + 0.25 * cell, y + 0.25 * cell, cell * 2, cell * 2)
+    size = cell * 2.5
+    border = 7
 
-    pygame.draw.rect(surface, BLACK, outline)
-    pygame.draw.rect(surface, WHITE, inside)
+    outline = pygame.Rect(x, y, size, size)
+    inside = outline.inflate(-border * 2, -border * 2)
+
+    pygame.draw.rect(surface, BLACK, outline, border_radius=8)
+    pygame.draw.rect(surface, WHITE, inside, border_radius=6)
 
 
 def draw_homes(surface, board_x, board_y, players):
