@@ -12,6 +12,7 @@ from data.true_false_questions import questions as true_false_questions
 def draw_main_surface():
     state = GameState.SELECT_PLAYERS
     players = []
+    player_names = []
     current_player_index = 0
     num_players = 0
 
@@ -43,8 +44,11 @@ def draw_main_surface():
 
             elif state == GameState.ENTER_NAME:
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN and name_input:
-                        state = GameState.CHOOSE_COLOR
+                    if event.key == pygame.K_RETURN:
+                        name_input = name_input.strip()
+                        if name_input and name_input not in player_names:
+                            state = GameState.CHOOSE_COLOR
+                            player_names.append(name_input)
                     elif event.key == pygame.K_BACKSPACE:
                         name_input = name_input[:-1]
                     else:
@@ -63,6 +67,7 @@ def draw_main_surface():
 
             elif state == GameState.PLAYING:
                 if first and players:
+                    del player_names
                     bx, by, quiz_rect = draw_board(players, players[current_player_index].color)
                     dice_rect = draw_dice(screen, players[current_player_index].color, moves)
                     first = False
@@ -124,6 +129,8 @@ def draw_main_surface():
 
         elif state == GameState.ENTER_NAME:
             draw_screen_when_choosing()
+            if name_input in player_names:
+                draw_text_with_box_around(screen, f"Името „{name_input}“ веќе постои. Избери друго!", WIDTH // 2, HEIGHT // 2 + 100, text_size=26, text_color=RED)
             draw_text(screen, f"Внеси име за играчот {len(players) + 1}", WIDTH // 2, HEIGHT // 2 - 40, 34)
             draw_text(screen, name_input + "|", WIDTH // 2, HEIGHT // 2 + 20, 40)
 
