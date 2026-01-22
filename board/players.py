@@ -10,8 +10,9 @@ class Player:
         self.finished = [False, False, False, False]
         self.active_pawn = 0
 
-    def move(self, dice):
-        i = self.active_pawn
+    def move(self, dice, pawn_index):
+        # i = self.active_pawn
+        i = pawn_index
 
         if self.pawns[i] == -1:
             if dice == 6:

@@ -56,13 +56,13 @@ def draw_board(players, color):
             pygame.draw.rect(screen, GRAY, rect)
             pygame.draw.rect(screen, BLACK, rect, 1)
 
-    draw_homes(screen, board_x, board_y, players)
+    pawns = draw_homes(screen, board_x, board_y, players)
     draw_secondary_colors(screen, board_x, board_y)
     draw_win_paths(screen, board_x, board_y)
     draw_center_triangles(screen, board_x, board_y)
     quiz_rect = draw_quiz_rect(color)
 
-    return board_x, board_y, quiz_rect
+    return board_x, board_y, quiz_rect, pawns
 
 
 def draw_quiz_rect(color):
@@ -101,6 +101,8 @@ def draw_homes(surface, board_x, board_y, players):
         (9, 9, YELLOW)
     ]
 
+    home_pawn_rects = {}
+
     for gx, gy, color in homes:
         rect = pygame.Rect(
             board_x + gx * cell,
@@ -119,7 +121,8 @@ def draw_homes(surface, board_x, board_y, players):
 
         for p in players:
             if p.color == color:
-                draw_players_positions(surface, rect, color, p)
+                home_pawns = draw_players_positions(surface, rect, color, p)
+                home_pawn_rects[p.name] = home_pawns
                 draw_dice_placeholder(surface, rect, color)
 
     center_rect = pygame.Rect(
@@ -130,7 +133,8 @@ def draw_homes(surface, board_x, board_y, players):
     )
     pygame.draw.rect(surface, WHITE, center_rect)
     pygame.draw.rect(surface, BLACK, center_rect, 2)
-    return
+
+    return home_pawn_rects
 
 
 def color_cells(dictionary, surface, board_x, board_y, cell):
@@ -252,13 +256,17 @@ def draw_players_positions(surface, rect, color, player=None):
         (cx + w * 0.7, cy + h * 0.7),
     ]
 
+    pawn_rects = []
     for i, (x, y) in enumerate(positions):
         if player and player.pawns[i] != -1:
             continue
 
         pygame.draw.circle(surface, WHITE, (int(x), int(y)), radius + 3)
         pygame.draw.circle(surface, color, (int(x), int(y)), radius)
-        pygame.draw.circle(surface, BLACK, (int(x), int(y)), radius, 2)
+        pawn = pygame.draw.circle(surface, BLACK, (int(x), int(y)), radius, 2)
+        pawn_rects.append((pawn, i))
+
+    return pawn_rects
 
 
 def draw_arrows(surface, arrow_cells, bx, by, cell):
