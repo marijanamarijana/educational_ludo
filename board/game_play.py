@@ -14,6 +14,7 @@ def draw_main_surface():
     players = []
     player_names = []
     current_player_index = 0
+    prev_player_index = 0
     num_players = 0
 
     name_input = ""
@@ -27,6 +28,8 @@ def draw_main_surface():
     dice_rect = None
     quiz_rect = None
     questions = list(multiple_choice_questions + true_false_questions)
+    initiator = None
+    defender = None
 
     running = True
     while running:
@@ -80,16 +83,17 @@ def draw_main_surface():
                             state = GameState.QUIZ
                         else:
                             draw_text_with_box_around(screen, "Прво мораш да имаш веќе извадено пионче на таблата!",
-                                      WIDTH // 2, HEIGHT // 2 + 120, text_size=26, text_color=RED)
+                                                      WIDTH // 2, HEIGHT // 2 + 120, text_size=26, text_color=RED)
                             draw_text_with_box_around(screen, "Кликни на коцката за да продолжиш со игра!",
-                                      WIDTH // 2, HEIGHT // 2 + 180, text_size=26, text_color=RED)
+                                                      WIDTH // 2, HEIGHT // 2 + 180, text_size=26, text_color=RED)
 
                     if dice_rect and dice_rect.collidepoint(event.pos):
                         moves = roll_dice(screen, players[current_player_index].color)
 
-                        current_player_index, waiting_for_roll, winner, state = move_player(players,
-                                                                                            current_player_index, moves,
-                                                                                            state)
+                        current_player_index, waiting_for_roll, winner, state, prev_player_index = move_player(players,
+                                                                                                               current_player_index,
+                                                                                                               moves,
+                                                                                                               state)
 
             elif state == GameState.QUIZ:
                 if event.type == pygame.KEYDOWN and event.unicode.isdigit():
@@ -110,9 +114,27 @@ def draw_main_surface():
 
                     state = GameState.PLAYING
 
-                    current_player_index, waiting_for_roll, winner, state = move_player(players, current_player_index,
-                                                                                        quiz_moves, state)
+                    current_player_index, waiting_for_roll, winner, state, prev_player_index = move_player(players,
+                                                                                                           current_player_index,
+                                                                                                           quiz_moves,
+                                                                                                           state)
                     quiz_moves = 0
+
+            elif state == GameState.DUEL:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    initiator_result = start_duel(questions, initiator)
+                    defender_result = start_duel(questions, defender)
+
+                    loser = initiator if initiator_result<defender_result else defender
+                    for player in players:
+                        if player.name == loser[0]:
+                            player.pawns[loser[1]] = -1
+
+                    state = GameState.PLAYING
+                    bx, by, quiz_rect = draw_board(players, players[current_player_index].color)
+                    dice_rect = draw_dice(screen, players[current_player_index].color, moves)
+                    waiting_for_roll = True
+
 
             elif state == GameState.WIN:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -130,7 +152,8 @@ def draw_main_surface():
         elif state == GameState.ENTER_NAME:
             draw_screen_when_choosing()
             if name_input in player_names:
-                draw_text_with_box_around(screen, f"Името „{name_input}“ веќе постои. Избери друго!", WIDTH // 2, HEIGHT // 2 + 100, text_size=26, text_color=RED)
+                draw_text_with_box_around(screen, f"Името „{name_input}“ веќе постои. Избери друго!", WIDTH // 2,
+                                          HEIGHT // 2 + 100, text_size=26, text_color=RED)
             draw_text(screen, f"Внеси име за играчот {len(players) + 1}", WIDTH // 2, HEIGHT // 2 - 40, 34)
             draw_text(screen, name_input + "|", WIDTH // 2, HEIGHT // 2 + 20, 40)
 
@@ -140,8 +163,25 @@ def draw_main_surface():
             color_boxes = draw_color_choices(screen, available_colors)
 
         elif state == GameState.PLAYING:
+            pawns_rects = {}
             for p in players:
-                p.draw(screen, bx, by)
+                pawns_rects_list = p.draw(screen, bx, by)
+                if p.has_active_pawn():
+                    pawns_rects[p.name] = pawns_rects_list
+
+            prev_player = players[prev_player_index]
+            if prev_player.has_active_pawn():
+                prev_player_pawns = pawns_rects.get(prev_player.name)
+                for pawn, idx in prev_player_pawns:
+                    for key in pawns_rects.keys():
+                        if key != prev_player.name:
+                            key_rects = pawns_rects.get(key)
+                            for key_rect, key_idx in key_rects:
+                                if pawn.colliderect(key_rect):
+                                    state = GameState.DUEL
+
+                                    initiator = (prev_player.name, idx)
+                                    defender = (key, key_idx)
 
             draw_text(screen, f"Играч на ред: {players[current_player_index].name}", 20, 20, center=False)
             draw_text(screen, "Кликни ја коцката.", 20, 50, center=False)
@@ -154,6 +194,13 @@ def draw_main_surface():
             draw_text(screen, f"Доколку одговориш точно се движиш напред,", WIDTH // 2, HEIGHT // 2 - 20, 26, GREEN)
             draw_text(screen, f"но доколку одговориш погрешно се движиш назад.", WIDTH // 2, HEIGHT // 2 + 40, 26, RED)
 
+        elif state == GameState.DUEL:
+            draw_screen_when_choosing()
+            initiator_name = initiator[0]
+            defender_name = defender[0]
+
+            draw_duel(initiator_name, defender_name)
+
         elif state == GameState.WIN:
             draw_win_screen(winner)
 
@@ -165,8 +212,8 @@ def draw_main_surface():
 
 def move_player(players, current_player_index, moves, state):
     current_player = players[current_player_index]
+    prev_player_index = current_player_index
     # TODO: choose which pawn to move
-    # TODO: if player is moving backwards prevent him from going before starting point
     current_player.move(moves)
 
     winner = None
@@ -180,7 +227,7 @@ def move_player(players, current_player_index, moves, state):
 
     waiting_for_roll = False
 
-    return current_player_index, waiting_for_roll, winner, state
+    return current_player_index, waiting_for_roll, winner, state, prev_player_index
 
 
 def draw_screen_when_choosing():
@@ -203,9 +250,10 @@ def draw_quiz(questions):
     screen.fill(WHITE)
     draw_text(screen, f"Избери ја соодветната опција за наведеното сценарио.", WIDTH // 2, 180, 28)
 
-    if len(question) > 60:
-        draw_text(screen, f"{question[:55]}", WIDTH // 2, 250, 28)
-        draw_text(screen, f"{question[55:]}", WIDTH // 2, 280, 28)
+    # TODO: questions go out of screen still, need 3 rows probably
+    if len(question) > 50:
+        draw_text(screen, f"{question[:50]}", WIDTH // 2, 250, 28)
+        draw_text(screen, f"{question[50:]}", WIDTH // 2, 280, 28)
     else:
         draw_text(screen, f"{question}", WIDTH // 2, 250, 28)
 
@@ -213,9 +261,9 @@ def draw_quiz(questions):
 
     option_y = 390
     for i in range(len(options)):
-        if len(options[i]) > 60:
-            draw_text(screen, f"{i + 1}. {options[i][:60]}", x, option_y, center=False)
-            draw_text(screen, f"    {options[i][60:]}", x, option_y + 30, center=False)
+        if len(options[i]) > 50:
+            draw_text(screen, f"{i + 1}. {options[i][:50]}", x, option_y, center=False)
+            draw_text(screen, f"    {options[i][50:]}", x, option_y + 30, center=False)
             option_y += 30
         else:
             draw_text(screen, f"{i + 1}. {options[i]}", x, option_y, center=False)
@@ -236,3 +284,42 @@ def draw_quiz(questions):
                 selected = 3
 
     return selected == answer
+
+
+def start_duel(questions, duel_player):
+    screen.fill(WHITE)
+    draw_text(screen, f"„{duel_player[0]}“ одговара на 3 прашања по ред.", WIDTH // 2, HEIGHT // 2 - 40, 30)
+    draw_text(screen, f"Притисни ENTER за да продолжиш", WIDTH // 2, HEIGHT // 2 + 40, 30)
+    pygame.display.flip()
+
+    result = 0
+    quiz_num = 0
+    quiz_started = False
+    while not quiz_started:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                quiz_started = True
+                while quiz_num < 3:
+                    if draw_quiz(questions):
+                        result += 1
+                    quiz_num += 1
+
+    return result
+
+
+def draw_duel(initiator_name, defender_name):
+    header = f"Играчите „{initiator_name}“ и „{defender_name}“ започнаа дуел!"
+    y = HEIGHT // 2 - 140
+    if len(header) > 50:
+        draw_text(screen, header[:50], WIDTH // 2, y, 26)
+        draw_text(screen, header[50:], WIDTH // 2, y + 40, 26)
+        y = y + 100
+    else:
+        draw_text(screen, header, WIDTH // 2, y, 26)
+        y = y + 60
+    draw_text(screen, f"„{initiator_name}“ треба да одговори точно", WIDTH // 2, y, 26)
+    draw_text(screen, f"три пати по ред за да победи!", WIDTH // 2, y + 40, 26)
+
+    draw_text(screen, f"Доколку „{initiator_name}“ погреши, а {defender_name}", WIDTH // 2, y + 100, 26)
+    draw_text(screen, f"ги одговори точно сите прашања, тој победува.", WIDTH // 2, y + 140, 26)
+    draw_text(screen, f"Притисни ENTER за да продолжиш", WIDTH // 2, y + 200, 26)

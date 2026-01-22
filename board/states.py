@@ -9,6 +9,7 @@ class GameState(Enum):
     PLAYING = 4
     WIN = 5
     QUIZ = 6
+    DUEL = 7
 
 
 MAIN_PATH = (((([(x, 6) for x in range(1, 6)] + [(6, y) for y in range(5, -1, -1)]

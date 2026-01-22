@@ -48,6 +48,7 @@ class Player:
                 pygame.draw.circle(surface, self.color, (int(x), int(y)), cell // 4)
                 pygame.draw.circle(surface, BLACK, (int(x), int(y)), cell // 4, 2)
 
+        pawn_rects = []
         for i, idx in enumerate(self.pawns):
             if idx == -1 or self.finished[i]:
                 continue
@@ -57,7 +58,10 @@ class Player:
             cy = by + row * cell + cell // 2
 
             pygame.draw.circle(surface, self.color, (cx, cy), cell // 3)
-            pygame.draw.circle(surface, BLACK, (cx, cy), cell // 3, 2)
+            pawn = pygame.draw.circle(surface, BLACK, (cx, cy), cell // 3, 2)
+            pawn_rects.append((pawn, i))
+
+        return pawn_rects
 
     def has_won(self):
         return all(self.finished)
