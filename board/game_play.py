@@ -57,8 +57,9 @@ def draw_main_surface():
                     if event.key == pygame.K_RETURN:
                         name_input = name_input.strip()
                         if name_input and name_input not in player_names:
-                            state = GameState.CHOOSE_COLOR
-                            player_names.append(name_input)
+                            if len(name_input) <= 15:
+                                state = GameState.CHOOSE_COLOR
+                                player_names.append(name_input)
                     elif event.key == pygame.K_BACKSPACE:
                         name_input = name_input[:-1]
                     else:
@@ -136,8 +137,8 @@ def draw_main_surface():
 
             elif state == GameState.DUEL:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    initiator_result = start_duel(questions, initiator)
-                    defender_result = start_duel(questions, defender)
+                    initiator_result = start_duel(questions, initiator[0])
+                    defender_result = start_duel(questions, defender[0])
 
                     loser = initiator if initiator_result<defender_result else defender
                     for player in players:
@@ -165,33 +166,35 @@ def draw_main_surface():
             if name_input in player_names:
                 draw_text_with_box_around(screen, f"Името „{name_input}“ веќе постои. Избери друго!", WIDTH // 2,
                                           HEIGHT // 2 + 100, text_size=26, text_color=RED)
-            draw_text(screen, f"Внеси име за играчот {len(players) + 1}", WIDTH // 2, HEIGHT // 2 - 40, 34)
-            draw_text(screen, name_input + "|", WIDTH // 2, HEIGHT // 2 + 20, 40)
+            if len(name_input) > 15:
+                draw_text_with_box_around(screen, f"Името треба да има помалку од 16 букви!", WIDTH // 2,
+                                          HEIGHT // 2 + 100, text_size=26, text_color=RED)
+            draw_text(screen, f"Внеси име за играчот {len(players) + 1}:", WIDTH // 2, HEIGHT // 2 - 40, 34)
+            draw_text(screen, name_input + "|", WIDTH // 2, HEIGHT // 2 + 20, 34)
 
         elif state == GameState.CHOOSE_COLOR:
             draw_screen_when_choosing()
-            draw_text(screen, "Избери боја:", WIDTH // 2, HEIGHT // 2 - 80, 40)
+            draw_text(screen, "Избери боја:", WIDTH // 2, HEIGHT // 2 - 80, 34)
             color_boxes = draw_color_choices(screen, available_colors)
 
         elif state == GameState.PLAYING:
             for p in players:
                 pawns_rects_list = p.draw(screen, bx, by)
-                if p.has_active_pawn():
-                    active_rects[p.name] = pawns_rects_list
+                active_rects[p.name] = pawns_rects_list
 
             prev_player = players[prev_player_index]
             if prev_player.has_active_pawn():
                 initiator, defender, state = check_duel(prev_player, state)
 
-            draw_text(screen, f"Играч на ред: {players[current_player_index].name}", 20, 20, center=False)
-            draw_text(screen, "Кликни ја коцката.", 20, 50, center=False)
+            draw_text(screen, f"Играч: {players[current_player_index].name}", 20, 20, 20, center=False)
+            draw_text(screen, "Кликни ја коцката.", 20, 50, 20, center=False)
 
         elif state == GameState.QUIZ:
             draw_screen_when_choosing()
-            draw_text(screen, f"Избравте да решавате квиз!", WIDTH // 2, HEIGHT // 2 - 140, 26)
-            draw_text(screen, f"Внеси број на чекори за коишто сакаш да се поместиш.", WIDTH // 2, HEIGHT // 2 - 80, 26)
-            draw_text(screen, f"Доколку одговориш точно се движиш напред,", WIDTH // 2, HEIGHT // 2 - 20, 26, GREEN)
-            draw_text(screen, f"но доколку одговориш погрешно се движиш назад.", WIDTH // 2, HEIGHT // 2 + 40, 26, RED)
+            draw_text(screen, f"Избравте да решавате квиз!", WIDTH // 2, HEIGHT // 2 - 140)
+            draw_text(screen, f"Внеси број на чекори за коишто сакаш да се поместиш.", WIDTH // 2, HEIGHT // 2 - 80)
+            draw_text(screen, f"Доколку одговориш точно се движиш напред,", WIDTH // 2, HEIGHT // 2 - 20, color=GREEN)
+            draw_text(screen, f"но доколку одговориш погрешно се движиш назад.", WIDTH // 2, HEIGHT // 2 + 40, color=RED)
 
         elif state == GameState.DUEL:
             draw_screen_when_choosing()
@@ -226,12 +229,13 @@ def check_duel(prev_player, state):
 
 
 def choose_pawn(pawns):
+    draw_text(screen, "Избери пионче!", 20, 80, 20, center=False, color=RED)
+    pygame.display.flip()
     selected_pawn = False
     while not selected_pawn:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for pawn, idx in pawns:
-                    print(pawn, event.pos)
                     if pawn.collidepoint(event.pos):
                         return idx
 
@@ -276,7 +280,7 @@ def draw_screen_when_choosing():
 
 def draw_win_screen(winner):
     screen.fill(WHITE)
-    draw_text(screen, f"{winner.name} ПОБЕДИ!", WIDTH // 2 - 120, HEIGHT // 2 - 40, 64, winner.color)
+    draw_text(screen, f"{winner.name.upper()} ПОБЕДИ!", WIDTH // 2 - 120, HEIGHT // 2 - 40, 64, winner.color)
     draw_text(screen, "Притисни ESC за излез", WIDTH // 2 - 110, HEIGHT // 2 + 40, 32)
 
 
@@ -290,23 +294,30 @@ def draw_quiz(questions):
     screen.fill(WHITE)
     draw_text(screen, f"Избери ја соодветната опција за наведеното сценарио.", WIDTH // 2, 180, 28)
 
-    # TODO: questions go out of screen still, need 3 rows probably
-    if len(question) > 50:
-        draw_text(screen, f"{question[:50]}", WIDTH // 2, 250, 28)
-        draw_text(screen, f"{question[50:]}", WIDTH // 2, 280, 28)
+    # handle longer questions going out of view
+    if len(question)<=50:
+        draw_text(screen, f"{question}", WIDTH // 2, 250)
     else:
-        draw_text(screen, f"{question}", WIDTH // 2, 250, 28)
+        idx = question[:50].rfind(' ')
+        draw_text(screen, f"{question[:idx]}", WIDTH // 2, 250)
+        if len(question[idx:])<=50:
+            draw_text(screen, f"{question[idx:]}", WIDTH // 2, 280)
+        else:
+            idx2 = question[idx:idx + 50].rfind(' ') + idx
+            draw_text(screen, f"{question[idx:idx2]}", WIDTH // 2, 280)
+            draw_text(screen, f"{question[idx2:]}", WIDTH // 2, 310)
 
-    draw_text(screen, f"Внеси го бројот на точниот одговор.", x, 350, 28, RED, center=False)
+    draw_text(screen, f"Внеси го бројот на точниот одговор.", x, 350, 24, RED, center=False)
 
     option_y = 390
     for i in range(len(options)):
         if len(options[i]) > 50:
-            draw_text(screen, f"{i + 1}. {options[i][:50]}", x, option_y, center=False)
-            draw_text(screen, f"    {options[i][50:]}", x, option_y + 30, center=False)
+            idx = options[i][:50].rfind(' ')
+            draw_text(screen, f"{i + 1}. {options[i][:idx]}", x, option_y, 24, center=False)
+            draw_text(screen, f"    {options[i][idx:]}", x, option_y + 30, 24, center=False)
             option_y += 30
         else:
-            draw_text(screen, f"{i + 1}. {options[i]}", x, option_y, center=False)
+            draw_text(screen, f"{i + 1}. {options[i]}", x, option_y, 24, center=False)
         option_y += 50
 
     pygame.display.flip()
@@ -326,10 +337,10 @@ def draw_quiz(questions):
     return selected == answer
 
 
-def start_duel(questions, duel_player):
+def start_duel(questions, player_name):
     screen.fill(WHITE)
-    draw_text(screen, f"„{duel_player[0]}“ одговара на 3 прашања по ред.", WIDTH // 2, HEIGHT // 2 - 40, 30)
-    draw_text(screen, f"Притисни ENTER за да продолжиш", WIDTH // 2, HEIGHT // 2 + 40, 30)
+    draw_text(screen, f"{player_name.upper()} одговара на 3 прашања по ред.", WIDTH // 2, HEIGHT // 2 - 40, 26)
+    draw_text(screen, f"Притисни ENTER за да продолжиш", WIDTH // 2, HEIGHT // 2 + 40, 26)
     pygame.display.flip()
 
     result = 0
@@ -348,18 +359,19 @@ def start_duel(questions, duel_player):
 
 
 def draw_duel(initiator_name, defender_name):
-    header = f"Играчите „{initiator_name}“ и „{defender_name}“ започнаа дуел!"
+    header = f"Играчите {initiator_name.upper()} и {defender_name.upper()} започнаа дуел!"
     y = HEIGHT // 2 - 140
     if len(header) > 50:
-        draw_text(screen, header[:50], WIDTH // 2, y, 26)
-        draw_text(screen, header[50:], WIDTH // 2, y + 40, 26)
+        idx = header[:50].rfind(' ')
+        draw_text(screen, header[:idx], WIDTH // 2, y, 26)
+        draw_text(screen, header[idx:], WIDTH // 2, y + 40, 26)
         y = y + 100
     else:
         draw_text(screen, header, WIDTH // 2, y, 26)
         y = y + 60
-    draw_text(screen, f"„{initiator_name}“ треба да одговори точно", WIDTH // 2, y, 26)
+    draw_text(screen, f"{initiator_name.upper()} треба да одговори точно", WIDTH // 2, y, 26)
     draw_text(screen, f"три пати по ред за да победи!", WIDTH // 2, y + 40, 26)
 
-    draw_text(screen, f"Доколку „{initiator_name}“ погреши, а {defender_name}", WIDTH // 2, y + 100, 26)
+    draw_text(screen, f"Доколку {initiator_name.upper()} погреши, а {defender_name.upper()}", WIDTH // 2, y + 100, 26)
     draw_text(screen, f"ги одговори точно сите прашања, тој победува.", WIDTH // 2, y + 140, 26)
     draw_text(screen, f"Притисни ENTER за да продолжиш", WIDTH // 2, y + 200, 26)
