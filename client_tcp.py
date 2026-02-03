@@ -438,6 +438,10 @@ def main():
             # else:
             #     draw_text(screen, f"{curr.name}'s turn", 20, 30, 24, RED, center=False)
             #     draw_text(screen, "Please wait...", 20, 60, 20, (100, 100, 100), center=False)
+        name_y = 30
+        for player in players_list:
+            draw_text(screen, player.name, 20, name_y, 20, player.color, center=False)
+            name_y += 30
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

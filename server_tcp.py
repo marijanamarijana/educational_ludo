@@ -237,12 +237,14 @@ def handle_client(conn, addr):
             with lock:
                 if player_id in lobby.players:
                     if lobby.game_state.get("turn_id") == player_id:
-                        lobby.pass_turn()  # Use the helper we discussed earlier
+                        print("Passed turn")
+                        lobby.pass_turn()
 
                     print(f"Removed player {player_id}, {lobby.game_state['players'][player_id]['name']}")
                     lobby.player_order.remove(player_id)
                     del lobby.players[player_id]
                     del lobby.game_state["players"][player_id]
+                    lobby.broadcast()
 
                 if not lobby.players and lobby.code in lobbies:
                     del lobbies[lobby.code]
