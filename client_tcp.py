@@ -281,6 +281,7 @@ def main():
     waiting_for_pawn = False
     active_rects = {}
     home_pawns = {}
+    duel_intro_seen = False
 
     running = True
     while running:
@@ -354,10 +355,14 @@ def main():
                         COLOR_ENUM[p1_data["color"].lower()],
                         COLOR_ENUM[p2_data["color"].lower()]
                     )
-                    pygame.time.delay(1500)
-                    network_send({"type": "duel_seen", "player": my_player_id})
+
+                    if not duel_intro_seen:
+                        network_send({"type": "duel_ready", "player": my_player_id})
+                        duel_intro_seen = True
 
                 else:
+                    duel_intro_seen = False
+
                     if my_player_id in [duel["p1"], duel["p2"]]:
                         res = draw_duel_overlay(duel)
                         if res is not None:
@@ -368,8 +373,8 @@ def main():
                                   WIDTH // 2, HEIGHT // 2 - 20, 40, RED)
                         draw_text(screen, "Ве молиме почекајте другите играчи да завршат",
                                   WIDTH // 2, HEIGHT // 2 + 40, 28, RED)
-                        pygame.display.flip()
 
+                pygame.display.flip()
                 continue
 
             players = []
@@ -400,6 +405,16 @@ def main():
             active_rects = {}
             for p in players:
                 active_rects[p.name] = p.draw(screen, bx, by)
+
+            opp_id, my_pawn, opp_pawn = client_check_duel(players, active_rects)
+            if opp_id is not None and is_my_turn():
+                network_send({
+                    "type": "initiate_duel",
+                    "p1": my_player_id,
+                    "p2": opp_id,
+                    "p1_pawn": my_pawn,
+                    "p2_pawn": opp_pawn
+                })
 
             dice_rect = draw_dice(screen, curr_color, current_dice_value if current_dice_value > 0 else 1)
 
@@ -459,7 +474,6 @@ def main():
                         draw_text_with_box_around(screen, "Прво мораш да имаш пионче на таблата!",
                                                   WIDTH // 2, HEIGHT // 2, text_size=26, text_color=RED)
                         pygame.display.flip()
-                        time.sleep(1.5)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

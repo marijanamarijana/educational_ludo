@@ -53,14 +53,14 @@ def roll_dice(surface, color):
 
         surface.blit(dice_rolling_images[rolling_images_counter], (x + cell // 2, y + cell // 2))
         pygame.display.update()
-        pygame.time.delay(50)
+        # pygame.time.delay(50)
 
         rolling_images_counter += 1
         if rolling_images_counter >= 8:
             is_rolling = False
             rolling_images_counter = 0
 
-    num = random.randint(1, 6)
+    num = (random.randint(1, 6))
 
     draw_dice(surface, color, num)
     return num

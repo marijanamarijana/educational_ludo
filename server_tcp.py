@@ -97,6 +97,7 @@ class Lobby:
     def switch_duel_to_quiz(self):
         if self.game_state["duel"]["active"]:
             self.game_state["duel"]["phase"] = "QUIZ"
+            self.broadcast()
 
 
 def handle_client(conn, addr):
@@ -162,6 +163,19 @@ def handle_client(conn, addr):
                     lobby.game_state["turn"] = (lobby.game_state["turn"] + 1) % len(lobby.players)
                     lobby.broadcast()
 
+            elif t == "duel_ready":
+                if not hasattr(lobby, 'duel_ready_players'):
+                    lobby.duel_ready_players = set()
+
+                lobby.duel_ready_players.add(player_id)
+
+                p1 = lobby.game_state["duel"]["p1"]
+                p2 = lobby.game_state["duel"]["p2"]
+
+                if p1 in lobby.duel_ready_players and p2 in lobby.duel_ready_players:
+                    lobby.switch_duel_to_quiz()
+                    lobby.duel_ready_players.clear()
+
             elif t == "initiate_duel":
                 duel = lobby.game_state["duel"]
                 lobby.game_state["turn"] = msg["p1"]
@@ -177,7 +191,6 @@ def handle_client(conn, addr):
                     "p2_answers": {},
                     "questions": random.sample(lobby.questions, 3)
                 })
-                threading.Timer(3.0, lobby.switch_duel_to_quiz).start()
                 lobby.broadcast()
 
             elif t == "duel_answer":
