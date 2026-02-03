@@ -6,7 +6,8 @@ import json
 
 from data import multiple_choice_questions, true_false_questions
 
-HOST = "127.0.0.1"
+HOST = "0.0.0.0" # for cloud
+# HOST = "127.0.0.1" # for local
 PORT = 62743
 
 lobbies = {}
@@ -22,9 +23,9 @@ class Lobby:
         self.code = code
         self.host = host_conn
         self.max_players = max_players
-        self.players = []
+        self.players = [] # stores connections, name and color
         self.game_state = {
-            "players": [],
+            "players": [], # stores player objects
             "turn": 0,
             "game_started": False,
             "duel": {
@@ -134,16 +135,41 @@ def handle_client(conn, addr):
                     player_id = len(lobby.players)
                     lobby.players.append({"conn": conn, "name": None, "color": None})
                     lobby.game_state["players"].append({"name": None, "color": None, "pawns": [-1]*4, "finished": [False]*4})
+                    lobby.broadcast()
                 conn.sendall(len(json.dumps({"type": "lobby_joined", "code": code, "player_id": player_id}).encode()).to_bytes(4, "big") +
                              json.dumps({"type": "lobby_joined", "code": code, "player_id": player_id}).encode())
 
             elif t == "register":
+                print("registering")
                 if lobby and player_id is not None:
-                    lobby.players[player_id]["name"] = msg.get("name")
-                    lobby.players[player_id]["color"] = msg.get("color")
-                    lobby.game_state["players"][player_id]["name"] = msg.get("name")
-                    lobby.game_state["players"][player_id]["color"] = msg.get("color")
-                    lobby.broadcast()
+                    new_name = msg.get("name")
+                    new_color = msg.get("color")
+
+                    name_taken = False
+                    color_taken = False
+
+                    with lock:
+                        for i, p in enumerate(lobby.players):
+                            if i == player_id:
+                                continue
+
+                            if p["name"] == new_name:
+                                name_taken = True
+                            if p["color"] == new_color:
+                                color_taken = True
+
+                    if name_taken or color_taken:
+                        reason = "Името" if name_taken else "Бојата"
+                        if name_taken and color_taken: reason = "Името и бојата"
+
+                        err = {"type": "error", "message": f"{reason} веќе постои!"}
+                        conn.sendall(len(json.dumps(err).encode()).to_bytes(4, "big") + json.dumps(err).encode())
+                    else:
+                        lobby.players[player_id]["name"] = new_name
+                        lobby.players[player_id]["color"] = new_color
+                        lobby.game_state["players"][player_id]["name"] = new_name
+                        lobby.game_state["players"][player_id]["color"] = new_color
+                        lobby.broadcast()
 
             elif t == "start_game":
                 if lobby and conn == lobby.host:
@@ -157,7 +183,7 @@ def handle_client(conn, addr):
                     if p_idx != -1:
                         if p_data[p_idx] == -1 and steps == 6:
                             p_data[p_idx] = 0
-                        else:
+                        elif p_data[p_idx] != -1:
                             p_data[p_idx] += steps
                     lobby.game_state["turn"] = (lobby.game_state["turn"] + 1) % len(lobby.players)
                     lobby.broadcast()
