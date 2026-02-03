@@ -3,10 +3,12 @@ import socket
 import string
 import threading
 import json
+import uuid
 
 from data import multiple_choice_questions, true_false_questions
 
-HOST = "127.0.0.1"
+# HOST = "0.0.0.0" # for cloud
+HOST = "127.0.0.1" # for local
 PORT = 62743
 
 lobbies = {}
@@ -22,10 +24,11 @@ class Lobby:
         self.code = code
         self.host = host_conn
         self.max_players = max_players
-        self.players = []
+        self.players = {} # { "uuid": {"conn": conn, "name": "...", "color": "..."} }
+        self.player_order = []
         self.game_state = {
-            "players": [],
-            "turn": 0,
+            "players": {},
+            "turn_id": None,
             "game_started": False,
             "duel": {
                 "active": False,
@@ -46,29 +49,9 @@ class Lobby:
         data = json.dumps({"type": "game_state", "game_state": self.game_state}).encode('utf-8')
         for p in self.players:
             try:
-                p["conn"].sendall(len(data).to_bytes(4, 'big') + data)
+                self.players[p]["conn"].sendall(len(data).to_bytes(4, 'big') + data)
             except:
                 continue
-
-    def reset_if_empty(self):
-        if not self.players:
-            self.game_state = {
-                "players": [],
-                "turn": 0,
-                "game_started": False,
-                "duel": {
-                    "active": False,
-                    "phase": "INTRO",
-                    "p1": None,
-                    "p2": None,
-                    "trigger_pawn": None,
-                    "target_pawn": None,
-                    "q_index": 0,
-                    "p1_answers": {},
-                    "p2_answers": {},
-                    "questions": []
-                }
-            }
 
     def resolve_duel(self):
         duel = self.game_state["duel"]
@@ -92,12 +75,43 @@ class Lobby:
         duel["p1"] = None
         duel["p2"] = None
         duel["phase"] = "INTRO"
-        self.game_state["turn"] = (self.game_state["turn"] + 1) % len(self.players)
+        self.pass_turn()
 
     def switch_duel_to_quiz(self):
         if self.game_state["duel"]["active"]:
             self.game_state["duel"]["phase"] = "QUIZ"
             self.broadcast()
+
+    def add_player(self, conn):
+        p_uuid = str(uuid.uuid4())
+        self.players[p_uuid] = {"conn": conn, "name": None, "color": None}
+        self.player_order.append(p_uuid)
+        self.game_state["players"][p_uuid] = {
+            "name": None, "color": None, "pawns": [-1] * 4, "finished": [False] * 4
+        }
+        return p_uuid
+
+    def remove_player(self, p_uuid):
+        if p_uuid in self.players:
+            if self.game_state["turn_id"] == p_uuid:
+                self.pass_turn()
+
+            del self.players[p_uuid]
+            if p_uuid in self.game_state["players"]:
+                del self.game_state["players"][p_uuid]
+            if p_uuid in self.player_order:
+                self.player_order.remove(p_uuid)
+
+    def pass_turn(self):
+        if not self.player_order:
+            return
+
+        try:
+            curr_idx = self.player_order.index(self.game_state["turn_id"])
+            next_idx = (curr_idx + 1) % len(self.player_order)
+            self.game_state["turn_id"] = self.player_order[next_idx]
+        except ValueError:
+            self.game_state["turn_id"] = self.player_order[0]
 
 
 def handle_client(conn, addr):
@@ -118,33 +132,54 @@ def handle_client(conn, addr):
                 lobby = Lobby(code, conn, msg.get("max_players", 4))
                 with lock:
                     lobbies[code] = lobby
-                    player_id = 0
-                    lobby.players.append({"conn": conn, "name": None, "color": None})
-                    lobby.game_state["players"].append({"name": None, "color": None, "pawns": [-1]*4, "finished": [False]*4})
-                conn.sendall(len(json.dumps({"type": "lobby_created", "code": code, "player_id": 0}).encode()).to_bytes(4, "big") +
-                             json.dumps({"type": "lobby_created", "code": code, "player_id": 0}).encode())
+                    player_id = lobby.add_player(conn)
+                    lobby.game_state["turn_id"] = player_id
+
+                conn.sendall(len(json.dumps({"type": "lobby_created", "code": code, "player_id": player_id}).encode()).to_bytes(4, "big") +
+                             json.dumps({"type": "lobby_created", "code": code, "player_id": player_id}).encode())
 
             elif t == "join_lobby":
                 code = msg.get("code")
                 with lock:
                     lobby = lobbies.get(code)
+                    print(len(lobby.players))
                     if not lobby or len(lobby.players) >= lobby.max_players:
                         err = {"type": "error", "message": "Lobby full or does not exist"}
                         conn.sendall(len(json.dumps(err).encode()).to_bytes(4, "big") + json.dumps(err).encode())
                         continue
-                    player_id = len(lobby.players)
-                    lobby.players.append({"conn": conn, "name": None, "color": None})
-                    lobby.game_state["players"].append({"name": None, "color": None, "pawns": [-1]*4, "finished": [False]*4})
+                    player_id = lobby.add_player(conn)
+                    lobby.broadcast()
                 conn.sendall(len(json.dumps({"type": "lobby_joined", "code": code, "player_id": player_id}).encode()).to_bytes(4, "big") +
                              json.dumps({"type": "lobby_joined", "code": code, "player_id": player_id}).encode())
 
             elif t == "register":
+                print("registering")
                 if lobby and player_id is not None:
-                    lobby.players[player_id]["name"] = msg.get("name")
-                    lobby.players[player_id]["color"] = msg.get("color")
-                    lobby.game_state["players"][player_id]["name"] = msg.get("name")
-                    lobby.game_state["players"][player_id]["color"] = msg.get("color")
-                    lobby.broadcast()
+                    new_name = msg.get("name")
+                    new_color = msg.get("color")
+
+                    name_taken = False
+                    color_taken = False
+
+                    with lock:
+                        for i, p in enumerate(lobby.players.values()):
+                            if p["name"] == new_name:
+                                name_taken = True
+                            if p["color"] == new_color:
+                                color_taken = True
+
+                    if name_taken or color_taken:
+                        reason = "Името" if name_taken else "Бојата"
+                        if name_taken and color_taken: reason = "Името и бојата"
+
+                        err = {"type": "error", "message": f"{reason} веќе постои!"}
+                        conn.sendall(len(json.dumps(err).encode()).to_bytes(4, "big") + json.dumps(err).encode())
+                    else:
+                        lobby.players[player_id]["name"] = new_name
+                        lobby.players[player_id]["color"] = new_color
+                        lobby.game_state["players"][player_id]["name"] = new_name
+                        lobby.game_state["players"][player_id]["color"] = new_color
+                        lobby.broadcast()
 
             elif t == "start_game":
                 if lobby and conn == lobby.host:
@@ -152,15 +187,15 @@ def handle_client(conn, addr):
                     lobby.broadcast()
 
             elif t == "move":
-                if lobby and player_id is not None:
+                if lobby and player_id == lobby.game_state["turn_id"]:
                     p_idx, steps = msg.get("pawn", -1), msg.get("dice", 0)
                     p_data = lobby.game_state["players"][player_id]["pawns"]
                     if p_idx != -1:
                         if p_data[p_idx] == -1 and steps == 6:
                             p_data[p_idx] = 0
-                        else:
+                        elif p_data[p_idx] != -1:
                             p_data[p_idx] += steps
-                    lobby.game_state["turn"] = (lobby.game_state["turn"] + 1) % len(lobby.players)
+                    lobby.pass_turn()
                     lobby.broadcast()
 
             elif t == "duel_ready":
@@ -178,7 +213,7 @@ def handle_client(conn, addr):
 
             elif t == "initiate_duel":
                 duel = lobby.game_state["duel"]
-                lobby.game_state["turn"] = msg["p1"]
+                lobby.game_state["turn_id"] = msg["p1"]
                 duel.update({
                     "active": True,
                     "phase": "INTRO",
@@ -213,10 +248,20 @@ def handle_client(conn, addr):
     finally:
         if lobby and player_id is not None:
             with lock:
-                if player_id < len(lobby.players):
+                if player_id in lobby.players:
+                    if lobby.game_state.get("turn_id") == player_id:
+                        print("Passed turn")
+                        lobby.pass_turn()
+
+                    print(f"Removed player {player_id}, {lobby.game_state['players'][player_id]['name']}")
+                    lobby.player_order.remove(player_id)
                     del lobby.players[player_id]
                     del lobby.game_state["players"][player_id]
-                lobby.reset_if_empty()
+                    lobby.broadcast()
+
+                if not lobby.players and lobby.code in lobbies:
+                    del lobbies[lobby.code]
+                    print("Lobby deleted, no players left.")
         conn.close()
 
 

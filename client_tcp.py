@@ -24,11 +24,14 @@ is_host = False
 kill = False
 player_name = ""
 player_color = None
+state = "MENU"
+server_error_msg = ""
 
-HOST = "127.0.0.1"
+HOST = "127.0.0.1" # for local
+# HOST = "84.8.255.17" # for cloud
 PORT = 62743
 
-COLOR_ENUM  = {
+COLOR_ENUM = {
     "red": RED,
     "green": GREEN,
     "blue": BLUE,
@@ -60,7 +63,7 @@ def send_move(pawn_index, dice_value, move_type="dice"):
 
 
 def run_listener():
-    global game_state, my_player_id, lobby_code, is_host, kill
+    global game_state, my_player_id, lobby_code, is_host, kill, state, server_error_msg
     while not kill:
         try:
             header = server_socket.recv(4)
@@ -79,7 +82,9 @@ def run_listener():
             elif t == "game_state":
                 game_state = msg["game_state"]
             elif t == "error":
-                print("SERVER ERROR:", msg.get("message"))
+                server_error_msg = msg.get("message")
+                print("SERVER ERROR:", server_error_msg)
+                state = "ENTER_NAME"
         except:
             continue
 
@@ -87,16 +92,17 @@ def run_listener():
 def create_player_objects(state):
     if not state or "players" not in state:
         return []
-    players = []
-    for pdata in state["players"]:
+    players_dict = {}
+    print(f"player values: {state['players'].values()}")
+    for p_id, pdata in state["players"].items():
         if not pdata.get("name") or not pdata.get("color"):
             continue
         color_const = COLOR_ENUM.get(pdata["color"].lower(), RED)
         player = Player(pdata["name"], color_const)
         player.pawns = pdata["pawns"][:]
         player.finished = pdata["finished"][:]
-        players.append(player)
-    return players
+        players_dict[p_id] = player
+    return players_dict
 
 
 def connect():
@@ -151,8 +157,8 @@ def draw_color_choice_boxes(colors, y_start=None):
 
 
 def is_my_turn():
-    if game_state and my_player_id is not None:
-        return game_state.get("turn", 0) == my_player_id
+    if game_state and my_player_id:
+        return game_state.get("turn_id") == my_player_id
     return False
 
 
@@ -242,7 +248,7 @@ def client_check_duel(players_objs, active_rects):
             if opp_name == my_name: continue
             for opp_rect, opp_idx in opp_rects:
                 if my_rect.colliderect(opp_rect):
-                    opp_id = next(i for i, p in enumerate(game_state["players"]) if p["name"] == opp_name)
+                    opp_id = next((pid for pid, pdata in game_state["players"].items() if pdata["name"] == opp_name),None)
                     return opp_id, my_idx, opp_idx
     return None, None, None
 
@@ -265,7 +271,7 @@ def draw_versus_screen(p1_name, p2_name, p1_color, p2_color):
 
 
 def main():
-    global kill, player_name, player_color, game_state, my_player_id
+    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state
     connect()
     state = "MENU"
     color_choices = [
@@ -276,6 +282,7 @@ def main():
     ]
     color_boxes = []
     temp_name = ""
+    server_error_msg = ""
 
     current_dice_value = -1
     waiting_for_pawn = False
@@ -313,29 +320,46 @@ def main():
         elif state == "ENTER_NAME":
             draw_centered("Напиши име:", HEIGHT // 2 - 60, 36)
             draw_centered(temp_name + "|", HEIGHT // 2, 42, BLUE)
+
+            if server_error_msg:
+                draw_centered(server_error_msg, HEIGHT // 2 + 100, 24, RED)
+
             draw_centered("Кликни ЕNTER да продолжиш", HEIGHT // 2 + 60, 24, (100, 100, 100))
 
         elif state == "CHOOSE_COLOR":
+            server_error_msg = ""
             draw_centered("Избери боја:", HEIGHT // 2 - 80, 36)
             draw_centered("Кликни на боја", HEIGHT // 2 - 40, 24, (100, 100, 100))
-            color_boxes = draw_color_choice_boxes(color_choices)
+
+            taken_colors = []
+
+            if game_state and game_state["players"]:
+                for p in game_state["players"].values():
+                    if p.get("color"):
+                        taken_colors.append(p["color"].lower())
+
+            available_colors = [c for c in color_choices if c[1] not in taken_colors]
+            color_boxes = draw_color_choice_boxes(available_colors)
 
         elif state == "LOBBY":
             draw_centered(f"Кодот за лоби {lobby_code}", HEIGHT // 2 - 120, 42, RED)
             draw_centered("Чекаме други играчи...", HEIGHT // 2 - 60, 28, (100, 100, 100))
 
-            if is_host and game_state and len([p for p in game_state["players"] if p.get("name")]) >= 2:
+            if is_host and game_state and len([p for p in game_state["players"].values() if p.get("name")]) >= 2:
                 btn_start = draw_button("ПОЧНИ", WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50,
                                         (0, 200, 0), (0, 255, 0), mouse_pos)
 
             if game_state:
                 y = HEIGHT // 2
-                for idx, p in enumerate(game_state["players"]):
-                    name = p["name"] if p["name"] else "Waiting..."
-                    if p.get("color"):
-                        color_rgb = COLOR_ENUM.get(p["color"].lower(), GRAY)
+                for p_uuid, p_data in game_state["players"].items():
+                    name = p_data["name"] if p_data["name"] else "Чекаме..."
+
+                    if p_data.get("color"):
+                        color_rgb = COLOR_ENUM.get(p_data["color"].lower(), (128, 128, 128))
                         pygame.draw.circle(screen, color_rgb, (WIDTH // 2 - 150, y + 5), 15)
-                    draw_centered(f"Player {idx + 1}: {name}", y, 26)
+
+                    display_name = f"{name} (ТИ)" if p_uuid == my_player_id else name
+                    draw_centered(display_name, y, 26)
                     y += 40
 
             if game_state and game_state.get("game_started"):
@@ -377,33 +401,33 @@ def main():
                 pygame.display.flip()
                 continue
 
-            players = []
-            for pdata in game_state["players"]:
+            players = {}
+            players_list = []
+            for player_id, pdata in game_state["players"].items():
                 if pdata["name"] and pdata["color"]:
                     color_const = COLOR_ENUM.get(pdata["color"].lower(), RED)
-                    p = Player(pdata["name"], color_const)
-                    p.pawns = pdata["pawns"]
-                    players.append(p)
+                    new_player = Player(pdata["name"], color_const)
+                    new_player.pawns = pdata["pawns"]
+                    players[player_id] = new_player
+                    players_list.append(new_player)
 
             if not players:
                 continue
 
-            turn_index = game_state.get("turn", 0)
-            if turn_index >= len(game_state["players"]):
+            turn_id = game_state.get("turn_id")
+            print(turn_id)
+            if turn_id is None or turn_id not in game_state["players"]:
                 continue
-
-            curr_data = game_state["players"][turn_index]
-            if not curr_data["name"] or not curr_data["color"]:
-                continue
+            curr_data = game_state["players"][turn_id]
 
             curr_color = COLOR_ENUM.get(curr_data["color"].lower(), RED)
             curr = Player(curr_data["name"], curr_color)
             curr.pawns = curr_data["pawns"]
 
-            bx, by, quiz_rect, home_pawns = draw_board(players, curr_color)
+            bx, by, quiz_rect, home_pawns = draw_board(players_list, curr_color)
 
             active_rects = {}
-            for p in players:
+            for p in players_list:
                 active_rects[p.name] = p.draw(screen, bx, by)
 
             opp_id, my_pawn, opp_pawn = client_check_duel(players, active_rects)
@@ -418,12 +442,26 @@ def main():
 
             dice_rect = draw_dice(screen, curr_color, current_dice_value if current_dice_value > 0 else 1)
 
+            if is_my_turn():
+                opp_id, my_p_idx, opp_p_idx = client_check_duel(players, active_rects)
+                if opp_id is not None:
+                    network_send({
+                        "type": "initiate_duel",
+                        "p1": my_player_id,
+                        "p2": opp_id,
+                        "p1_pawn": my_p_idx,
+                        "p2_pawn": opp_p_idx
+                    })
             # if is_my_turn():
             #     draw_text(screen, "YOUR TURN!", 20, 30, 28, GREEN, center=False)
             #     draw_text(screen, f"Player: {curr.name}", 20, 60, 20, BLACK, center=False)
             # else:
             #     draw_text(screen, f"{curr.name}'s turn", 20, 30, 24, RED, center=False)
             #     draw_text(screen, "Please wait...", 20, 60, 20, (100, 100, 100), center=False)
+        name_y = 30
+        for player in players_list:
+            draw_text(screen, player.name, 20, name_y, 20, player.color, center=False)
+            name_y += 30
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if quiz_rect and quiz_rect.collidepoint(event.pos):
@@ -530,14 +568,66 @@ def main():
                         break
 
             elif state == "LOBBY" and event.type == pygame.MOUSEBUTTONDOWN:
-                if is_host and game_state and len([p for p in game_state["players"] if p.get("name")]) >= 2:
+                if is_host and game_state and len([p for p in game_state["players"].values() if p.get("name")]) >= 2:
+                    print("starting")
                     if 'btn_start' in locals() and btn_start.collidepoint(event.pos):
+                        print("sending start signal")
                         network_send({"type": "start_game"})
 
             elif state == "PLAYING" and is_my_turn() and event.type == pygame.MOUSEBUTTONDOWN:
+                if quiz_rect and quiz_rect.collidepoint(event.pos):
+                    players = create_player_objects(game_state)
+                    curr_p = players[my_player_id]
+
+                    if curr_p.has_active_pawn():
+                        current_dice_value = -1
+                        waiting_for_pawn_selection = False
+
+                        selectable = active_rects.get(curr_p.name, [])
+                        chosen_idx = choose_pawn(selectable)
+
+                        if chosen_idx is not None:
+                            screen.fill(WHITE)
+                            draw_text(screen, "Избравте да решавате квиз!", WIDTH // 2,
+                                      HEIGHT // 2 - 140)
+                            draw_text(screen, "Внеси број на чекори (1-6):", WIDTH // 2,
+                                      HEIGHT // 2 - 80)
+                            draw_text(screen, "Точно = напред", WIDTH // 2, HEIGHT // 2 - 20,
+                                      color=GREEN)
+                            draw_text(screen, "Погрешно = назад", WIDTH // 2, HEIGHT // 2 + 20,
+                                      color=RED)
+                            pygame.display.flip()
+
+                            quiz_moves = 0
+                            waiting_for_input = True
+                            while waiting_for_input:
+                                for ev in pygame.event.get():
+                                    if ev.type == pygame.QUIT:
+                                        pygame.quit()
+                                        sys.exit()
+                                    if ev.type == pygame.KEYDOWN and ev.unicode.isdigit():
+                                        num = int(ev.unicode)
+                                        if 1 <= num <= 6:
+                                            quiz_moves = num
+                                            waiting_for_input = False
+                                clock.tick(FPS)
+
+                            result = draw_quiz(questions)
+                            final_move = quiz_moves if result else max(0, -quiz_moves)
+
+                            send_move(chosen_idx, final_move, move_type="quiz")
+                            current_dice_value = -1
+                            waiting_for_pawn_selection = False
+
+                    else:
+                        draw_text_with_box_around(screen, "Прво мораш да имаш пионче на таблата!",
+                                                  WIDTH // 2, HEIGHT // 2, text_size=26, text_color=RED)
+                        pygame.display.flip()
+                        time.sleep(1.5)
+
                 if dice_rect and dice_rect.collidepoint(event.pos) and current_dice_value == -1:
                     current_dice_value = roll_dice(screen, curr_color)
-
+                    current_dice_value = 6
                     has_pawn_on_board = any(p >= 0 for p in curr.pawns)
 
                     if current_dice_value != 6 and not has_pawn_on_board:
@@ -549,7 +639,10 @@ def main():
 
                 elif waiting_for_pawn and current_dice_value > 0:
                     my_player = players[my_player_id]
-                    selectable_pawns = active_rects.get(my_player.name, []) + home_pawns.get(my_player.name, [])
+
+                    selectable_pawns = active_rects.get(my_player.name, [])
+                    if current_dice_value == 6:
+                        selectable_pawns += home_pawns.get(my_player.name, [])
 
                     chosen_idx = None
                     for pawn_rect, idx in selectable_pawns:
