@@ -26,8 +26,8 @@ player_color = None
 state = "MENU"
 server_error_msg = ""
 
-# HOST = "127.0.0.1" # for local
-HOST = "84.8.255.17" # for cloud
+HOST = "127.0.0.1" # for local
+# HOST = "84.8.255.17" # for cloud
 PORT = 62743
 
 COLOR_ENUM = {
@@ -91,16 +91,17 @@ def run_listener():
 def create_player_objects(state):
     if not state or "players" not in state:
         return []
-    players = []
-    for pdata in state["players"]:
+    players_dict = {}
+    print(f"player values: {state['players'].values()}")
+    for p_id, pdata in state["players"].items():
         if not pdata.get("name") or not pdata.get("color"):
             continue
         color_const = COLOR_ENUM.get(pdata["color"].lower(), RED)
         player = Player(pdata["name"], color_const)
         player.pawns = pdata["pawns"][:]
         player.finished = pdata["finished"][:]
-        players.append(player)
-    return players
+        players_dict[p_id] = player
+    return players_dict
 
 
 def connect():
@@ -155,8 +156,8 @@ def draw_color_choice_boxes(colors, y_start=None):
 
 
 def is_my_turn():
-    if game_state and my_player_id is not None:
-        return game_state.get("turn", 0) == my_player_id
+    if game_state and my_player_id:
+        return game_state.get("turn_id") == my_player_id
     return False
 
 
@@ -246,7 +247,7 @@ def client_check_duel(players_objs, active_rects):
             if opp_name == my_name: continue
             for opp_rect, opp_idx in opp_rects:
                 if my_rect.colliderect(opp_rect):
-                    opp_id = next(i for i, p in enumerate(game_state["players"]) if p["name"] == opp_name)
+                    opp_id = next((pid for pid, pdata in game_state["players"].items() if pdata["name"] == opp_name),None)
                     return opp_id, my_idx, opp_idx
     return None, None, None
 
@@ -330,7 +331,7 @@ def main():
             taken_colors = []
 
             if game_state and game_state["players"]:
-                for p in game_state["players"]:
+                for p in game_state["players"].values():
                     if p.get("color"):
                         taken_colors.append(p["color"].lower())
 
@@ -341,18 +342,21 @@ def main():
             draw_centered(f"Кодот за лоби {lobby_code}", HEIGHT // 2 - 120, 42, RED)
             draw_centered("Чекаме други играчи...", HEIGHT // 2 - 60, 28, (100, 100, 100))
 
-            if is_host and game_state and len([p for p in game_state["players"] if p.get("name")]) >= 2:
+            if is_host and game_state and len([p for p in game_state["players"].values() if p.get("name")]) >= 2:
                 btn_start = draw_button("ПОЧНИ", WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50,
                                         (0, 200, 0), (0, 255, 0), mouse_pos)
 
             if game_state:
                 y = HEIGHT // 2
-                for idx, p in enumerate(game_state["players"]):
-                    name = p["name"] if p["name"] else "Чекаме..."
-                    if p.get("color"):
-                        color_rgb = COLOR_ENUM.get(p["color"].lower(), GRAY)
+                for p_uuid, p_data in game_state["players"].items():
+                    name = p_data["name"] if p_data["name"] else "Чекаме..."
+
+                    if p_data.get("color"):
+                        color_rgb = COLOR_ENUM.get(p_data["color"].lower(), (128, 128, 128))
                         pygame.draw.circle(screen, color_rgb, (WIDTH // 2 - 150, y + 5), 15)
-                    draw_centered(f"Играч {idx + 1}: {name}", y, 26)
+
+                    display_name = f"{name} (ТИ)" if p_uuid == my_player_id else name
+                    draw_centered(display_name, y, 26)
                     y += 40
 
             if game_state and game_state.get("game_started"):
@@ -387,33 +391,33 @@ def main():
 
                 continue
 
-            players = []
-            for pdata in game_state["players"]:
+            players = {}
+            players_list = []
+            for player_id, pdata in game_state["players"].items():
                 if pdata["name"] and pdata["color"]:
                     color_const = COLOR_ENUM.get(pdata["color"].lower(), RED)
-                    p = Player(pdata["name"], color_const)
-                    p.pawns = pdata["pawns"]
-                    players.append(p)
+                    new_player = Player(pdata["name"], color_const)
+                    new_player.pawns = pdata["pawns"]
+                    players[player_id] = new_player
+                    players_list.append(new_player)
 
             if not players:
                 continue
 
-            turn_index = game_state.get("turn", 0)
-            if turn_index >= len(game_state["players"]):
+            turn_id = game_state.get("turn_id")
+            print(turn_id)
+            if turn_id is None or turn_id not in game_state["players"]:
                 continue
-
-            curr_data = game_state["players"][turn_index]
-            if not curr_data["name"] or not curr_data["color"]:
-                continue
+            curr_data = game_state["players"][turn_id]
 
             curr_color = COLOR_ENUM.get(curr_data["color"].lower(), RED)
             curr = Player(curr_data["name"], curr_color)
             curr.pawns = curr_data["pawns"]
 
-            bx, by, quiz_rect, home_pawns = draw_board(players, curr_color)
+            bx, by, quiz_rect, home_pawns = draw_board(players_list, curr_color)
 
             active_rects = {}
-            for p in players:
+            for p in players_list:
                 active_rects[p.name] = p.draw(screen, bx, by)
 
             dice_rect = draw_dice(screen, curr_color, current_dice_value if current_dice_value > 0 else 1)
@@ -490,8 +494,10 @@ def main():
                         break
 
             elif state == "LOBBY" and event.type == pygame.MOUSEBUTTONDOWN:
-                if is_host and game_state and len([p for p in game_state["players"] if p.get("name")]) >= 2:
+                if is_host and game_state and len([p for p in game_state["players"].values() if p.get("name")]) >= 2:
+                    print("starting")
                     if 'btn_start' in locals() and btn_start.collidepoint(event.pos):
+                        print("sending start signal")
                         network_send({"type": "start_game"})
 
             elif state == "PLAYING" and is_my_turn() and event.type == pygame.MOUSEBUTTONDOWN:
