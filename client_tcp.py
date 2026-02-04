@@ -16,6 +16,8 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Multiplayer Ludo")
 clock = pygame.time.Clock()
 load_images()
+quiz_bg_image = pygame.image.load('images/quiz_background.jpg')
+quiz_bg_image = pygame.transform.scale(quiz_bg_image, (900, 800))
 
 # server_socket = None
 game_state = None
@@ -136,7 +138,7 @@ def create_player_objects(state):
 
 
 def main():
-    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice
+    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions
     connect()
     state = "MENU"
     color_choices = [
@@ -392,16 +394,7 @@ def main():
                         chosen_idx = choose_pawn(selectable)
 
                         if chosen_idx is not None:
-                            screen.fill(WHITE)
-                            draw_text(screen, "Избравте да решавате квиз!", WIDTH // 2,
-                                      HEIGHT // 2 - 140)
-                            draw_text(screen, "Внеси број на чекори (1-6):", WIDTH // 2,
-                                      HEIGHT // 2 - 80)
-                            draw_text(screen, "Точно = напред", WIDTH // 2, HEIGHT // 2 - 20,
-                                      color=GREEN)
-                            draw_text(screen, "Погрешно = назад", WIDTH // 2, HEIGHT // 2 + 20,
-                                      color=RED)
-                            pygame.display.flip()
+                            draw_quiz_intro_overlay(quiz_bg_image)
 
                             quiz_moves = 0
                             waiting_for_input = True
@@ -417,7 +410,9 @@ def main():
                                             waiting_for_input = False
                                 clock.tick(FPS)
 
-                            result = draw_quiz(questions)
+                            if len(questions) < 1:
+                                questions = list(multiple_choice_questions + true_false_questions)
+                            result = draw_quiz(questions, quiz_bg_image)
                             final_move = quiz_moves if result else -quiz_moves
 
                             send_move(chosen_idx, final_move, move_type="quiz")

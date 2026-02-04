@@ -6,23 +6,28 @@ MARGIN_RATIO = 0.14
 GRID_SIZE = 15
 FPS = 13
 
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+WHITE = (230, 240, 255)
+BLACK = (12, 13, 12)
+GRAY = (25, 35, 50)
 
-RED = (220, 20, 60)
-GREEN = (34, 139, 34)
-YELLOW = (255, 215, 0)
-BLUE = (65, 105, 225)
+RED = (255, 0, 0)
+PURPLE = (189, 0, 255)
+GREEN = (59, 168, 12)
+BLUE = (0, 30, 255)
+YELLOW = (211, 218, 6)
 
-LIGHT_RED = (255, 160, 160)
-LIGHT_GREEN = (160, 255, 160)
-LIGHT_BLUE = (160, 200, 255)
-LIGHT_YELLOW = (255, 255, 160)
+LIGHT_PURPLE = (253, 0, 255)
+LIGHT_GREEN = (10, 60, 20)
+LIGHT_BLUE = (0, 205, 255)
+LIGHT_YELLOW = (247, 255, 0)
 
-DARK_GREY = (50, 50, 50)
-GRAY = (230, 230, 230)
+DARK_GREY = (40, 50, 65)
 
-PLAYER_COLORS = [RED, GREEN, YELLOW, BLUE]
+DUEL_BG = (10, 20, 30, 200)
+DUEL_CYAN = BLUE
+DUEL_LIME = GREEN
+
+PLAYER_COLORS = [PURPLE, GREEN, YELLOW, BLUE]
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Ludo Board")
@@ -39,7 +44,7 @@ board_y = (h - board_size) // 2
 def draw_board(players, color):
     global w, h, cell, board_x, board_y
 
-    screen.fill(WHITE)
+    screen.fill(BLACK)
 
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
@@ -49,8 +54,8 @@ def draw_board(players, color):
                 cell,
                 cell
             )
-            pygame.draw.rect(screen, GRAY, rect)
-            pygame.draw.rect(screen, BLACK, rect, 1)
+            pygame.draw.rect(screen, (15,20,30), rect)
+            pygame.draw.rect(screen, GRAY, rect, 1)
 
     pawns = draw_homes(screen, board_x, board_y, players)
     draw_secondary_colors(screen, board_x, board_y)
@@ -64,9 +69,9 @@ def draw_board(players, color):
 def draw_quiz_rect(color):
     quiz_border = pygame.Rect(board_x + 7.8 * cell, board_y - 2.3 * cell, 2.5 * cell, 2 * cell)
     quiz_rect = pygame.Rect(board_x + 7.8 * cell + 2, board_y - 2.3 * cell + 2, 2.5 * cell - 4, 2 * cell - 4)
-    pygame.draw.rect(screen, BLACK, quiz_border)
-    pygame.draw.rect(screen, color, quiz_rect)
-    draw_text(screen, "КВИЗ", quiz_rect.centerx, quiz_rect.centery)
+    pygame.draw.rect(screen, DUEL_CYAN, quiz_border, border_radius=5)
+    pygame.draw.rect(screen, BLACK, quiz_rect, border_radius=3)
+    draw_text(screen, "КВИЗ", quiz_rect.centerx, quiz_rect.centery, color=color)
 
     return quiz_rect
 
@@ -74,7 +79,7 @@ def draw_quiz_rect(color):
 def draw_dice_placeholder(surface, rect, color):
     x = rect.right - 2.5 * cell
 
-    if color == RED or color == GREEN:
+    if color == PURPLE or color == GREEN:
         y = rect.top - 2.5 * cell
     if color == BLUE or color == YELLOW:
         y = rect.bottom
@@ -91,7 +96,7 @@ def draw_dice_placeholder(surface, rect, color):
 
 def draw_homes(surface, board_x, board_y, players):
     homes = [
-        (0, 0, RED),
+        (0, 0, PURPLE),
         (9, 0, GREEN),
         (0, 9, BLUE),
         (9, 9, YELLOW)
@@ -146,7 +151,7 @@ def draw_win_paths(surface, board_x, board_y):
         GREEN: [(7, i) for i in range(1, 6)] + [(8, 1)],
         YELLOW: [(i, 7) for i in range(9, 14)] + [(13, 8)],
         BLUE: [(7, i) for i in range(9, 14)] + [(6, 13)],
-        RED: [(i, 7) for i in range(1, 6)] + [(1, 6)],
+        PURPLE: [(i, 7) for i in range(1, 6)] + [(1, 6)],
     }
 
     arrow_cells = [
@@ -165,7 +170,7 @@ def draw_secondary_colors(surface, board_x, board_y):
         LIGHT_GREEN: [(x, y) for x in range(6, 9) for y in range(0, 6)],
         LIGHT_YELLOW: [(x, y) for x in range(9, 15) for y in range(6, 9)],
         LIGHT_BLUE: [(x, y) for x in range(6, 9) for y in range(9, 15)],
-        LIGHT_RED: [(x, y) for x in range(0, 6) for y in range(6, 9)],
+        LIGHT_PURPLE: [(x, y) for x in range(0, 6) for y in range(6, 9)],
     }
 
     color_cells(secondary_color_paths, surface, board_x, board_y, cell)
@@ -186,7 +191,7 @@ def draw_center_triangles(surface, board_x, board_y):
     pygame.draw.polygon(surface, GREEN, [top_left, top_right, center])
     pygame.draw.polygon(surface, YELLOW, [top_right, bottom_right, center])
     pygame.draw.polygon(surface, BLUE, [bottom_left, bottom_right, center])
-    pygame.draw.polygon(surface, RED, [top_left, bottom_left, center])
+    pygame.draw.polygon(surface, PURPLE, [top_left, bottom_left, center])
 
     pygame.draw.line(surface, BLACK, top_right, bottom_left, 4)
     pygame.draw.line(surface, BLACK, top_left, bottom_right, 4)
@@ -257,8 +262,9 @@ def draw_players_positions(surface, rect, color, player=None):
         if player and player.pawns[i] != -1:
             continue
 
-        pygame.draw.circle(surface, WHITE, (int(x), int(y)), radius + 3)
+        pygame.draw.circle(surface, color, (int(x), int(y)), radius + 2, 2)
         pygame.draw.circle(surface, color, (int(x), int(y)), radius)
+        pygame.draw.circle(surface, BLACK, (int(x), int(y)), radius - 4, 1)
         pawn = pygame.draw.circle(surface, BLACK, (int(x), int(y)), radius, 2)
         pawn_rects.append((pawn, i))
 
@@ -380,58 +386,105 @@ def draw_win_screen(winner):
     draw_text(screen, "Притисни ESC за излез", WIDTH // 2 - 110, HEIGHT // 2 + 40, 32)
 
 
-def draw_quiz(questions):
+def draw_quiz_intro_overlay(quiz_bg):
+    screen.blit(quiz_bg, (0, 0))
+
+    win_w, win_h = 700, 500
+    win_rect = pygame.Rect((WIDTH - win_w) // 2, (HEIGHT - win_h) // 2, win_w, win_h)
+
+    pygame.draw.rect(screen, (5, 10, 20), win_rect, border_radius=15)
+    pygame.draw.rect(screen, DUEL_CYAN, win_rect, 3, border_radius=15)
+
+    header_rect = pygame.Rect(win_rect.x, win_rect.y, win_w, 35)
+    pygame.draw.rect(screen, DUEL_CYAN, header_rect, border_top_left_radius=15, border_top_right_radius=15)
+    draw_text(screen, "ИЗВЕСТУВАЊЕ", win_rect.centerx, win_rect.y + 18, 20, BLACK)
+
+    draw_text(screen, "Избравте да решавате квиз!", win_rect.centerx, win_rect.y + 80, 28, WHITE)
+    draw_text(screen, "> Внеси број на чекори (1-6):", win_rect.centerx, win_rect.y + 140, 24, DUEL_CYAN)
+    draw_text(screen, "ДВИЖЕЊЕ ПРИ ОДГОВОР:", win_rect.centerx, win_rect.y + 200, 18, (150, 150, 150))
+    draw_text(screen, "[ ТОЧНО ] -> НАПРЕДОК", win_rect.centerx, win_rect.y + 240, 22, GREEN)
+    draw_text(screen, "[ ПОГРЕШНО ] -> ПОВЛЕКУВАЊЕ", win_rect.centerx, win_rect.y + 280, 22, PURPLE)
+
+    pygame.display.flip()
+
+
+def draw_quiz(questions, quiz_bg):
     tmp = questions.pop(random.randint(0, len(questions) - 1))
     question = tmp["question"]
     options = tmp["options"]
     answer = tmp["answer"]
-    x = 60
 
-    screen.fill(WHITE)
-    draw_text(screen, f"Избери ја соодветната опција за наведеното сценарио.", WIDTH // 2, 180, 28)
+    win_w, win_h = 700, 500
+    win_rect = pygame.Rect((WIDTH - win_w) // 2, (HEIGHT - win_h) // 2, win_w, win_h)
 
-    # handle longer questions going out of view
-    if len(question)<=50:
-        draw_text(screen, f"{question}", WIDTH // 2, 250)
+    pygame.draw.rect(screen, (5, 15, 25), win_rect, border_radius=15)
+    pygame.draw.rect(screen, DUEL_CYAN, win_rect, 3, border_radius=15)
+
+    header_rect = pygame.Rect(win_rect.x, win_rect.y, win_w, 40)
+    pygame.draw.rect(screen, DUEL_CYAN, header_rect, border_top_left_radius=15, border_top_right_radius=15)
+    draw_text(screen, "--- ОДГОВОРИ НА ДАДЕНОТО СЦЕНАРИО ---", win_rect.centerx, win_rect.y + 20, 22, BLACK)
+
+    y_offset = win_rect.y + 80
+    if len(question) <= 50:
+        draw_text(screen, f"{question}", WIDTH // 2, y_offset, size=24, color=WHITE)
     else:
         idx = question[:50].rfind(' ')
-        draw_text(screen, f"{question[:idx]}", WIDTH // 2, 250)
-        if len(question[idx:])<=50:
-            draw_text(screen, f"{question[idx:]}", WIDTH // 2, 280)
+        draw_text(screen, f"{question[:idx]}", WIDTH // 2, y_offset, size=24, color=WHITE)
+        y_offset += 30
+        if len(question[idx:]) <= 50:
+            draw_text(screen, f"{question[idx:]}", WIDTH // 2, y_offset, size=24, color=WHITE)
         else:
             idx2 = question[idx:idx + 50].rfind(' ') + idx
-            draw_text(screen, f"{question[idx:idx2]}", WIDTH // 2, 280)
-            draw_text(screen, f"{question[idx2:]}", WIDTH // 2, 310)
+            draw_text(screen, f"{question[idx:idx2]}", WIDTH // 2, y_offset, size=24, color=WHITE)
+            y_offset += 30
+            draw_text(screen, f"{question[idx2:]}", WIDTH // 2, y_offset, size=24, color=WHITE)
 
-    draw_text(screen, f"Внеси го бројот на точниот одговор.", x, 350, 24, RED, center=False)
+    y_offset += 40
+    for i, opt in enumerate(options):
+        if len(opt) > 50:
+            idx = opt[:50].rfind(' ')
+            opt_rect = pygame.Rect(win_rect.x + 50, y_offset, win_w - 100, 90)
+            pygame.draw.rect(screen, (20, 40, 60), opt_rect, border_radius=5)
+            pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
 
-    option_y = 390
-    for i in range(len(options)):
-        if len(options[i]) > 50:
-            idx = options[i][:50].rfind(' ')
-            draw_text(screen, f"{i + 1}. {options[i][:idx]}", x, option_y, 24, center=False)
-            draw_text(screen, f"    {options[i][idx:]}", x, option_y + 30, 24, center=False)
-            option_y += 30
+            draw_text(screen, f"[{i + 1}]", opt_rect.x + 25, opt_rect.centery-22, 22, DUEL_LIME)
+            draw_text(screen, opt[:idx], opt_rect.x + 55, opt_rect.centery-30, 20, WHITE, center=False)
+            draw_text(screen, opt[idx:], opt_rect.x + 55, opt_rect.centery, 20, WHITE, center=False)
+            y_offset += 100
         else:
-            draw_text(screen, f"{i + 1}. {options[i]}", x, option_y, 24, center=False)
-        option_y += 50
+            opt_rect = pygame.Rect(win_rect.x + 50, y_offset, win_w - 100, 45)
+            pygame.draw.rect(screen, (20, 40, 60), opt_rect, border_radius=5)
+            pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
+
+            draw_text(screen, f"[{i + 1}]", opt_rect.x + 25, opt_rect.centery-2, 22, DUEL_LIME)
+            draw_text(screen, opt, opt_rect.x + 55, opt_rect.centery-10, 20, WHITE, center=False)
+            y_offset += 55
 
     pygame.display.flip()
 
     selected = -1
     while selected == -1:
         for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_1:
-                selected = 0
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_2:
-                selected = 1
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_3 and len(options) > 2:
-                selected = 2
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_4 and len(options) > 3:
-                selected = 3
+            if event.type == pygame.QUIT:
+                pygame.quit();
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1: selected = 0
+                if event.key == pygame.K_2: selected = 1
+                if event.key == pygame.K_3 and len(options) > 2: selected = 2
+                if event.key == pygame.K_4 and len(options) > 3: selected = 3
 
-    return selected == answer
+    is_correct = (selected == answer)
+    feedback_color = DUEL_LIME if is_correct else RED
+    feedback_text = "ТОЧНО" if is_correct else "ПОГРЕШНО"
 
+    flash_rect = win_rect.inflate(-20, -20)
+    pygame.draw.rect(screen, feedback_color, flash_rect, 5, border_radius=10)
+    draw_text(screen, feedback_text, win_rect.centerx, win_rect.bottom - 40, 30, feedback_color)
+    pygame.display.flip()
+    pygame.time.delay(800)
+
+    return is_correct
 
 def draw_duel_overlay(duel_info, my_player_id):
     q_idx = duel_info["q_index"]
@@ -441,7 +494,7 @@ def draw_duel_overlay(duel_info, my_player_id):
 
     if str(q_idx) in my_answers:
         screen.fill(WHITE)
-        draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/3)", WIDTH // 2, HEIGHT // 2, 30, RED)
+        draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/3)", WIDTH // 2, HEIGHT // 2, 30, PURPLE)
         pygame.display.flip()
         return None
 

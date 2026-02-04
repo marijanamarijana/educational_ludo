@@ -4,7 +4,6 @@ from board.main_board import GREEN, YELLOW
 dice_images = []
 dice_rolling_images = []
 
-
 def load_images():
     for num in range(1, 7):
         dice_image = pygame.image.load('images/dice/' + str(num) + '.png')
