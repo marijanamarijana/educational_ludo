@@ -1,4 +1,3 @@
-import random
 from board.main_board import *
 from board.main_board import GREEN, YELLOW
 

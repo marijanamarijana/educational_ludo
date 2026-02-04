@@ -1,6 +1,5 @@
+import random
 import pygame
-
-pygame.init()
 
 WIDTH, HEIGHT = 900, 800
 MARGIN_RATIO = 0.14
@@ -28,9 +27,6 @@ PLAYER_COLORS = [RED, GREEN, YELLOW, BLUE]
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Ludo Board")
 clock = pygame.time.Clock()
-
-FONT = pygame.font.SysFont(None, 32)
-BIG_FONT = pygame.font.SysFont(None, 48)
 
 w, h = screen.get_size()
 margin = int(min(w, h) * MARGIN_RATIO)
@@ -376,3 +372,78 @@ def draw_versus_screen(p1_name, p2_name, p1_color, p2_color):
 
     draw_text(screen, "ПОДГОТВЕТЕ СЕ ЗА КВИЗ!", WIDTH // 2, HEIGHT - 100, 30, WHITE)
     pygame.display.flip()
+
+
+def draw_win_screen(winner):
+    screen.fill(WHITE)
+    draw_text(screen, f"{winner.name.upper()} ПОБЕДИ!", WIDTH // 2 - 120, HEIGHT // 2 - 40, 64, winner.color)
+    draw_text(screen, "Притисни ESC за излез", WIDTH // 2 - 110, HEIGHT // 2 + 40, 32)
+
+
+def draw_quiz(questions):
+    tmp = questions.pop(random.randint(0, len(questions) - 1))
+    question = tmp["question"]
+    options = tmp["options"]
+    answer = tmp["answer"]
+    x = 60
+
+    screen.fill(WHITE)
+    draw_text(screen, f"Избери ја соодветната опција за наведеното сценарио.", WIDTH // 2, 180, 28)
+
+    # handle longer questions going out of view
+    if len(question)<=50:
+        draw_text(screen, f"{question}", WIDTH // 2, 250)
+    else:
+        idx = question[:50].rfind(' ')
+        draw_text(screen, f"{question[:idx]}", WIDTH // 2, 250)
+        if len(question[idx:])<=50:
+            draw_text(screen, f"{question[idx:]}", WIDTH // 2, 280)
+        else:
+            idx2 = question[idx:idx + 50].rfind(' ') + idx
+            draw_text(screen, f"{question[idx:idx2]}", WIDTH // 2, 280)
+            draw_text(screen, f"{question[idx2:]}", WIDTH // 2, 310)
+
+    draw_text(screen, f"Внеси го бројот на точниот одговор.", x, 350, 24, RED, center=False)
+
+    option_y = 390
+    for i in range(len(options)):
+        if len(options[i]) > 50:
+            idx = options[i][:50].rfind(' ')
+            draw_text(screen, f"{i + 1}. {options[i][:idx]}", x, option_y, 24, center=False)
+            draw_text(screen, f"    {options[i][idx:]}", x, option_y + 30, 24, center=False)
+            option_y += 30
+        else:
+            draw_text(screen, f"{i + 1}. {options[i]}", x, option_y, 24, center=False)
+        option_y += 50
+
+    pygame.display.flip()
+
+    selected = -1
+    while selected == -1:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_1:
+                selected = 0
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_2:
+                selected = 1
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_3 and len(options) > 2:
+                selected = 2
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_4 and len(options) > 3:
+                selected = 3
+
+    return selected == answer
+
+
+def draw_duel_overlay(duel_info, my_player_id):
+    q_idx = duel_info["q_index"]
+    question_data = duel_info["questions"][q_idx]
+
+    my_answers = duel_info["p1_answers"] if my_player_id == duel_info["p1"] else duel_info["p2_answers"]
+
+    if str(q_idx) in my_answers:
+        screen.fill(WHITE)
+        draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/3)", WIDTH // 2, HEIGHT // 2, 30, RED)
+        pygame.display.flip()
+        return None
+
+    return draw_quiz([question_data])
+

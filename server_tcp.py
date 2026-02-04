@@ -236,6 +236,7 @@ def handle_client(conn, addr):
                     "p2_answers": {},
                     "questions": random.sample(lobby.questions, 3)
                 })
+                lobby.pass_turn()
                 lobby.broadcast()
 
             elif t == "duel_answer":
