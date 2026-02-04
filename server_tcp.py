@@ -186,6 +186,14 @@ def handle_client(conn, addr):
                     lobby.game_state["game_started"] = True
                     lobby.broadcast()
 
+            elif t == "rolling_dice":
+                data = json.dumps({"type": "dice_state", "value": msg.get("value")}).encode('utf-8')
+                for p in lobby.players:
+                    try:
+                        lobby.players[p]["conn"].sendall(len(data).to_bytes(4, 'big') + data)
+                    except:
+                        continue
+
             elif t == "move":
                 if lobby and player_id == lobby.game_state["turn_id"]:
                     p_idx, steps = msg.get("pawn", -1), msg.get("dice", 0)
@@ -195,6 +203,8 @@ def handle_client(conn, addr):
                             p_data[p_idx] = 0
                         elif p_data[p_idx] != -1:
                             p_data[p_idx] += steps
+                    if p_data[p_idx] < 0:
+                        p_data[p_idx] = 0
                     lobby.pass_turn()
                     lobby.broadcast()
 
@@ -202,7 +212,7 @@ def handle_client(conn, addr):
                 if not hasattr(lobby, 'duel_ready_players'):
                     lobby.duel_ready_players = set()
 
-                lobby.duel_ready_players.add(player_id)
+                lobby.duel_ready_players.add(msg.get("player"))
 
                 p1 = lobby.game_state["duel"]["p1"]
                 p2 = lobby.game_state["duel"]["p2"]

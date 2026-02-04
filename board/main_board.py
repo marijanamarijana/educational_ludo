@@ -299,7 +299,7 @@ def draw_arrow(surface, cell_rect, direction):
 
 
 def draw_text(surface, text, x, y, size=26, color=BLACK, center=True):
-    font = pygame.font.SysFont("Verdana", size)  # Arial can also be used as most computers have it and support cyrillic
+    font = pygame.font.SysFont("Verdana", size)
     text = font.render(text, False, color)
     text_rect = text.get_rect()
 
@@ -322,20 +322,57 @@ def draw_text_with_box_around(surface, text, center_x, center_y, padding=10, tex
     surface.blit(text_surf, text_rect)
 
 
-def draw_color_choices(surface, available_colors):
+def draw_color_choice_boxes(colors, y_start=None):
+    if y_start is None:
+        y_start = HEIGHT // 2 + 20
+
     boxes = []
-    start_x = WIDTH // 2 - 180
-    y = HEIGHT // 2
+    box_size = 60
+    spacing = 80
+    start_x = WIDTH // 2 - (len(colors) * spacing) // 2
 
-    for i, color in enumerate(PLAYER_COLORS):
-        rect = pygame.Rect(start_x + i * 100, y, 60, 60)
+    for i, (color_const, color_name) in enumerate(colors):
+        x = start_x + i * spacing
+        rect = pygame.Rect(x, y_start, box_size, box_size)
+        pygame.draw.rect(screen, color_const, rect)
+        pygame.draw.rect(screen, (0, 0, 0), rect, 3)
 
-        if color in available_colors:
-            pygame.draw.rect(surface, color, rect)
-        else:
-            pygame.draw.rect(surface, GRAY, rect)
+        font = pygame.font.Font(None, 20)
+        text_surf = font.render(color_name.capitalize(), True, (0, 0, 0))
+        text_rect = text_surf.get_rect(center=(x + box_size // 2, y_start + box_size + 15))
+        screen.blit(text_surf, text_rect)
 
-        pygame.draw.rect(surface, BLACK, rect, 2)
-        boxes.append((rect, color))
+        boxes.append((rect, color_const, color_name))
 
     return boxes
+
+
+def draw_button(text, x, y, w, h, color, hover_color, mouse_pos):
+    rect = pygame.Rect(x, y, w, h)
+    is_hover = rect.collidepoint(mouse_pos)
+
+    pygame.draw.rect(screen, hover_color if is_hover else color, rect, border_radius=8)
+    pygame.draw.rect(screen, (0, 0, 0), rect, 3, border_radius=8)
+
+    font = pygame.font.Font(None, 28)
+    text_surf = font.render(text, True, (255, 255, 255) if is_hover else (0, 0, 0))
+    text_rect = text_surf.get_rect(center=rect.center)
+    screen.blit(text_surf, text_rect)
+
+    return rect
+
+
+def draw_versus_screen(p1_name, p2_name, p1_color, p2_color):
+    screen.fill(BLACK)
+
+    pygame.draw.rect(screen, p1_color, (0, 0, WIDTH // 2, HEIGHT))
+    draw_text(screen, p1_name.upper(), WIDTH // 4, HEIGHT // 2 - 50, 50, WHITE)
+
+    pygame.draw.rect(screen, p2_color, (WIDTH // 2, 0, WIDTH // 2, HEIGHT))
+    draw_text(screen, p2_name.upper(), (WIDTH // 4) * 3, HEIGHT // 2 - 50, 50, WHITE)
+
+    pygame.draw.circle(screen, WHITE, (WIDTH // 2, HEIGHT // 2), 60)
+    draw_text(screen, "VS", WIDTH // 2, HEIGHT // 2 - 20, 60, BLACK)
+
+    draw_text(screen, "ПОДГОТВЕТЕ СЕ ЗА КВИЗ!", WIDTH // 2, HEIGHT - 100, 30, WHITE)
+    pygame.display.flip()

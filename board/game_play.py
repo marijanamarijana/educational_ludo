@@ -11,221 +11,38 @@ from data.multiple_choice_questions import questions as multiple_choice_question
 from data.true_false_questions import questions as true_false_questions
 
 
-def draw_main_surface():
-    global active_rects, home_pawns
-    active_rects = {}
-    home_pawns = {}
-    state = GameState.SELECT_PLAYERS
-    players = []
-    player_names = []
-    current_player_index = 0
-    prev_player_index = 0
-    num_players = 0
-
-    name_input = ""
-    available_colors = PLAYER_COLORS.copy()
-    moves = -1
-    quiz_moves = 0
-    waiting_for_roll = False
-    first = True
-    color_boxes = []
-    winner = None
-    dice_rect = None
-    quiz_rect = None
-    questions = list(multiple_choice_questions + true_false_questions)
-    initiator = None
-    defender = None
-    quiz_chosen_pawn = None
-
-
-    running = True
-    while running:
-        clock.tick(FPS)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-            if state == GameState.SELECT_PLAYERS:
-                if event.type == pygame.KEYDOWN:
-                    if event.key in (pygame.K_2, pygame.K_3, pygame.K_4):
-                        num_players = int(event.unicode)
-                        state = GameState.ENTER_NAME
-
-            elif state == GameState.ENTER_NAME:
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        name_input = name_input.strip()
-                        if name_input and name_input not in player_names:
-                            if len(name_input) <= 15:
-                                state = GameState.CHOOSE_COLOR
-                                player_names.append(name_input)
-                    elif event.key == pygame.K_BACKSPACE:
-                        name_input = name_input[:-1]
-                    else:
-                        name_input += event.unicode
-
-            elif state == GameState.CHOOSE_COLOR:
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    for rect, color in color_boxes:
-                        if rect.collidepoint(event.pos) and color in available_colors:
-                            players.append(Player(name_input, color))
-                            available_colors.remove(color)
-                            name_input = ""
-                            state = GameState.ENTER_NAME
-                            if len(players) == num_players:
-                                state = GameState.PLAYING
-
-            elif state == GameState.PLAYING:
-                if first and players:
-                    del player_names
-                    bx, by, quiz_rect, home_pawns = draw_board(players, players[current_player_index].color)
-                    dice_rect = draw_dice(screen, players[current_player_index].color, moves)
-                    first = False
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if quiz_rect.collidepoint(event.pos):
-                        current_player = players[current_player_index]
-
-                        if current_player.has_active_pawn():
-                            state = GameState.QUIZ
-                            draw_text_with_box_around(screen, "Избери пионче!",
-                                                      WIDTH // 2, HEIGHT // 2, text_size=26, text_color=RED)
-                            pygame.display.flip()
-
-                            quiz_chosen_pawn = choose_pawn(active_rects[current_player.name])
-
-                        else:
-                            draw_text_with_box_around(screen, "Прво мораш да имаш веќе извадено пионче на таблата!",
-                                                      WIDTH // 2, HEIGHT // 2 + 120, text_size=26, text_color=RED)
-                            draw_text_with_box_around(screen, "Кликни на коцката за да продолжиш со игра!",
-                                                      WIDTH // 2, HEIGHT // 2 + 180, text_size=26, text_color=RED)
-
-                    if dice_rect and dice_rect.collidepoint(event.pos):
-                        moves = roll_dice(screen, players[current_player_index].color)
-
-                        current_player_index, waiting_for_roll, winner, state, prev_player_index = move_player(players,
-                                                                                                               current_player_index,
-                                                                                                               moves,
-                                                                                                               state)
-
-            elif state == GameState.QUIZ:
-                if event.type == pygame.KEYDOWN and event.unicode.isdigit():
-                    if int(event.unicode) < 1 or int(event.unicode) > 6:
-                        continue
-
-                    if not players[current_player_index].has_active_pawn():
-                        state = GameState.PLAYING
-                        continue
-
-                    quiz_moves += int(event.unicode)
-                    if not questions:
-                        questions = list(multiple_choice_questions + true_false_questions)
-
-                    result = draw_quiz(questions)
-                    if not result:
-                        quiz_moves *= -1
-
-                    state = GameState.PLAYING
-
-                    current_player_index, waiting_for_roll, winner, state, prev_player_index = move_player(players,
-                                                                                                           current_player_index,
-                                                                                                           quiz_moves,
-                                                                                                           state, quiz_chosen_pawn)
-
-                    quiz_moves = 0
-
-            elif state == GameState.DUEL:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    initiator_result = start_duel(questions, initiator[0])
-                    defender_result = start_duel(questions, defender[0])
-
-                    loser = initiator if initiator_result<defender_result else defender
-                    for player in players:
-                        if player.name == loser[0]:
-                            player.pawns[loser[1]] = -1
-
-                    state = GameState.PLAYING
-                    waiting_for_roll = False
-
-            elif state == GameState.WIN:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    running = False
-
-        if not waiting_for_roll and players:
-            bx, by, quiz_rect, home_pawns = draw_board(players, players[current_player_index].color)
-            dice_rect = draw_dice(screen, players[current_player_index].color, moves)
-            waiting_for_roll = True
-
-        if state == GameState.SELECT_PLAYERS:
-            draw_screen_when_choosing()
-            draw_text(screen, "Внеси 2, 3 или 4 за број на играчи.", WIDTH // 2, HEIGHT // 2 - 40, 34)
-
-        elif state == GameState.ENTER_NAME:
-            draw_screen_when_choosing()
-            if name_input in player_names:
-                draw_text_with_box_around(screen, f"Името „{name_input}“ веќе постои. Избери друго!", WIDTH // 2,
-                                          HEIGHT // 2 + 100, text_size=26, text_color=RED)
-            if len(name_input) > 15:
-                draw_text_with_box_around(screen, f"Името треба да има помалку од 16 букви!", WIDTH // 2,
-                                          HEIGHT // 2 + 100, text_size=26, text_color=RED)
-            draw_text(screen, f"Внеси име за играчот {len(players) + 1}:", WIDTH // 2, HEIGHT // 2 - 40, 34)
-            draw_text(screen, name_input + "|", WIDTH // 2, HEIGHT // 2 + 20, 34)
-
-        elif state == GameState.CHOOSE_COLOR:
-            draw_screen_when_choosing()
-            draw_text(screen, "Избери боја:", WIDTH // 2, HEIGHT // 2 - 80, 34)
-            color_boxes = draw_color_choices(screen, available_colors)
-
-        elif state == GameState.PLAYING:
-            for p in players:
-                pawns_rects_list = p.draw(screen, bx, by)
-                active_rects[p.name] = pawns_rects_list
-
-            prev_player = players[prev_player_index]
-            if prev_player.has_active_pawn():
-                initiator, defender, state = check_duel(prev_player, state)
-
-            draw_text(screen, f"Играч: {players[current_player_index].name}", 20, 20, 20, center=False)
-            draw_text(screen, "Кликни ја коцката.", 20, 50, 20, center=False)
-
-        elif state == GameState.QUIZ:
-            draw_screen_when_choosing()
-            draw_text(screen, f"Избравте да решавате квиз!", WIDTH // 2, HEIGHT // 2 - 140)
-            draw_text(screen, f"Внеси број на чекори за коишто сакаш да се поместиш.", WIDTH // 2, HEIGHT // 2 - 80)
-            draw_text(screen, f"Доколку одговориш точно се движиш напред,", WIDTH // 2, HEIGHT // 2 - 20, color=GREEN)
-            draw_text(screen, f"но доколку одговориш погрешно се движиш назад.", WIDTH // 2, HEIGHT // 2 + 40, color=RED)
-
-        elif state == GameState.DUEL:
-            draw_screen_when_choosing()
-            initiator_name = initiator[0]
-            defender_name = defender[0]
-
-            draw_duel(initiator_name, defender_name)
-
-        elif state == GameState.WIN:
-            draw_win_screen(winner)
-
-        pygame.display.flip()
-
-    pygame.quit()
-    sys.exit()
-
-
-def check_duel(prev_player, state):
-    prev_player_pawns = active_rects.get(prev_player.name)
-    for pawn, idx in prev_player_pawns:
-        for key in active_rects.keys():
-            if key != prev_player.name:
-                key_rects = active_rects.get(key)
-                for key_rect, key_idx in key_rects:
-                    if pawn.colliderect(key_rect):
-                        state = GameState.DUEL
-                        initiator = (prev_player.name, idx)
-                        defender = (key, key_idx)
-                        return initiator, defender, state
-
-    return None, None, state
+# def move_player(players, current_player_index, moves, state, chosen_pawn=None):
+#     current_player = players[current_player_index]
+#     prev_player_index = current_player_index
+#     current_player_index = (current_player_index + 1) % len(players)
+#
+#     if chosen_pawn is None:
+#         if not current_player.has_active_pawn() and moves != 6:
+#             return current_player_index, False, None, state, prev_player_index
+#
+#         all_pawns = []
+#         if not current_player.has_active_pawn():
+#             all_pawns = home_pawns.get(current_player.name)
+#         else:
+#             all_pawns = active_rects.get(current_player.name)
+#             if moves == 6:
+#                 all_pawns += home_pawns.get(current_player.name)
+#
+#         chosen_idx = choose_pawn(all_pawns)
+#         current_player.move(moves, chosen_idx)
+#     else:
+#         current_player.move(moves, chosen_pawn)
+#
+#     winner = None
+#     state = state
+#
+#     if current_player.has_won():
+#         winner = current_player
+#         state = GameState.WIN
+#
+#     waiting_for_roll = False
+#
+#     return current_player_index, waiting_for_roll, winner, state, prev_player_index
 
 
 def choose_pawn(pawns):
@@ -238,44 +55,6 @@ def choose_pawn(pawns):
                 for pawn, idx in pawns:
                     if pawn.collidepoint(event.pos):
                         return idx
-
-
-def move_player(players, current_player_index, moves, state, chosen_pawn=None):
-    current_player = players[current_player_index]
-    prev_player_index = current_player_index
-    current_player_index = (current_player_index + 1) % len(players)
-
-    if chosen_pawn is None:
-        if not current_player.has_active_pawn() and moves != 6:
-            return current_player_index, False, None, state, prev_player_index
-
-        all_pawns = []
-        if not current_player.has_active_pawn():
-            all_pawns = home_pawns.get(current_player.name)
-        else:
-            all_pawns = active_rects.get(current_player.name)
-            if moves == 6:
-                all_pawns += home_pawns.get(current_player.name)
-
-        chosen_idx = choose_pawn(all_pawns)
-        current_player.move(moves, chosen_idx)
-    else:
-        current_player.move(moves, chosen_pawn)
-
-    winner = None
-    state = state
-
-    if current_player.has_won():
-        winner = current_player
-        state = GameState.WIN
-
-    waiting_for_roll = False
-
-    return current_player_index, waiting_for_roll, winner, state, prev_player_index
-
-
-def draw_screen_when_choosing():
-    screen.fill(WHITE)
 
 
 def draw_win_screen(winner):
@@ -337,41 +116,16 @@ def draw_quiz(questions):
     return selected == answer
 
 
-def start_duel(questions, player_name):
-    screen.fill(WHITE)
-    draw_text(screen, f"{player_name.upper()} одговара на 3 прашања по ред.", WIDTH // 2, HEIGHT // 2 - 40, 26)
-    draw_text(screen, f"Притисни ENTER за да продолжиш", WIDTH // 2, HEIGHT // 2 + 40, 26)
-    pygame.display.flip()
+def draw_duel_overlay(duel_info, my_player_id):
+    q_idx = duel_info["q_index"]
+    question_data = duel_info["questions"][q_idx]
 
-    result = 0
-    quiz_num = 0
-    quiz_started = False
-    while not quiz_started:
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                quiz_started = True
-                while quiz_num < 3:
-                    if draw_quiz(questions):
-                        result += 1
-                    quiz_num += 1
+    my_answers = duel_info["p1_answers"] if my_player_id == duel_info["p1"] else duel_info["p2_answers"]
 
-    return result
+    if str(q_idx) in my_answers:
+        screen.fill(WHITE)
+        draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/3)", WIDTH // 2, HEIGHT // 2, 30, RED)
+        pygame.display.flip()
+        return None
 
-
-def draw_duel(initiator_name, defender_name):
-    header = f"Играчите {initiator_name.upper()} и {defender_name.upper()} започнаа дуел!"
-    y = HEIGHT // 2 - 140
-    if len(header) > 50:
-        idx = header[:50].rfind(' ')
-        draw_text(screen, header[:idx], WIDTH // 2, y, 26)
-        draw_text(screen, header[idx:], WIDTH // 2, y + 40, 26)
-        y = y + 100
-    else:
-        draw_text(screen, header, WIDTH // 2, y, 26)
-        y = y + 60
-    draw_text(screen, f"{initiator_name.upper()} треба да одговори точно", WIDTH // 2, y, 26)
-    draw_text(screen, f"три пати по ред за да победи!", WIDTH // 2, y + 40, 26)
-
-    draw_text(screen, f"Доколку {initiator_name.upper()} погреши, а {defender_name.upper()}", WIDTH // 2, y + 100, 26)
-    draw_text(screen, f"ги одговори точно сите прашања, тој победува.", WIDTH // 2, y + 140, 26)
-    draw_text(screen, f"Притисни ENTER за да продолжиш", WIDTH // 2, y + 200, 26)
+    return draw_quiz([question_data])
