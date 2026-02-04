@@ -236,12 +236,12 @@ def handle_client(conn, addr):
                     "p2_answers": {},
                     "questions": random.sample(lobby.questions, 3)
                 })
-                lobby.pass_turn()
                 lobby.broadcast()
 
             elif t == "duel_answer":
                 duel = lobby.game_state["duel"]
                 q_idx = duel["q_index"]
+                player_id = msg["player"]
                 if player_id == duel["p1"]:
                     duel["p1_answers"][str(q_idx)] = msg["correct"]
                 if player_id == duel["p2"]:

@@ -257,9 +257,10 @@ def main():
                     if my_player_id in [duel["p1"], duel["p2"]]:
                         res = draw_duel_overlay(duel, my_player_id)
                         if res is not None:
-                            network_send({"type": "duel_answer", "correct": res})
+                            network_send({"type": "duel_answer", "player": my_player_id, "correct": res})
+                            pygame.event.clear()
                     else:
-                        screen.fill(WHITE)
+                        screen.fill(BLACK)
                         draw_text(screen, f"ДУЕЛ: {p1_data['name']} vs {p2_data['name']}",
                                   WIDTH // 2, HEIGHT // 2 - 20, 40, RED)
                         draw_text(screen, "Ве молиме почекајте другите играчи да завршат",
@@ -282,7 +283,6 @@ def main():
                 continue
 
             turn_id = game_state.get("turn_id")
-            print(turn_id)
             if turn_id is None or turn_id not in game_state["players"]:
                 continue
             curr_data = game_state["players"][turn_id]
@@ -375,9 +375,7 @@ def main():
 
             elif state == "LOBBY" and event.type == pygame.MOUSEBUTTONDOWN:
                 if is_host and game_state and len([p for p in game_state["players"].values() if p.get("name")]) >= 2:
-                    print("starting")
                     if 'btn_start' in locals() and btn_start.collidepoint(event.pos):
-                        print("sending start signal")
                         network_send({"type": "start_game"})
 
             elif state == "PLAYING" and is_my_turn() and event.type == pygame.MOUSEBUTTONDOWN:

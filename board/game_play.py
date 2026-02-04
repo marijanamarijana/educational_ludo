@@ -36,7 +36,7 @@ from board.states import *
 
 
 def choose_pawn(pawns):
-    draw_text(screen, "Избери пионче!", 20, 80, 20, center=False, color=PURPLE)
+    draw_text(screen, "Избери пионче!", 20, HEIGHT - 50, 20, center=False, color=RED)
     pygame.display.flip()
     selected_pawn = False
     while not selected_pawn:

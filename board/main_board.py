@@ -402,7 +402,7 @@ def draw_quiz_intro_overlay(quiz_bg):
     draw_text(screen, "> Внеси број на чекори (1-6):", win_rect.centerx, win_rect.y + 140, 24, DUEL_CYAN)
     draw_text(screen, "ДВИЖЕЊЕ ПРИ ОДГОВОР:", win_rect.centerx, win_rect.y + 200, 18, (150, 150, 150))
     draw_text(screen, "[ ТОЧНО ] -> НАПРЕДОК", win_rect.centerx, win_rect.y + 240, 22, GREEN)
-    draw_text(screen, "[ ПОГРЕШНО ] -> ПОВЛЕКУВАЊЕ", win_rect.centerx, win_rect.y + 280, 22, PURPLE)
+    draw_text(screen, "[ ПОГРЕШНО ] -> ПОВЛЕКУВАЊЕ", win_rect.centerx, win_rect.y + 280, 22, RED)
 
     pygame.display.flip()
 
@@ -491,12 +491,11 @@ def draw_duel_overlay(duel_info, my_player_id):
     question_data = duel_info["questions"][q_idx]
 
     my_answers = duel_info["p1_answers"] if my_player_id == duel_info["p1"] else duel_info["p2_answers"]
-
+    print(f"q_idx: {q_idx}, my_answers: {my_answers}")
     if str(q_idx) in my_answers:
         screen.fill(BLACK)
-        draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/3)", WIDTH // 2, HEIGHT // 2, 30, PURPLE)
+        draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/3)", WIDTH // 2, HEIGHT // 2, 30, RED)
         pygame.display.flip()
-        clock.tick(FPS)
         return None
 
     return draw_quiz([question_data])
