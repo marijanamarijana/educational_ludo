@@ -58,11 +58,14 @@ def roll_dice(surface, color, num):
             is_rolling = False
             rolling_images_counter = 0
 
+    num = 6
+        #random.randint(1, 6)
+
     draw_dice(surface, color, num)
 
 
 def get_position(color):
-    if color == RED:
+    if color == PURPLE:
         gx, gy = (0, 0)
         y = board_y - cell * 3 + cell * 0.25
     if color == GREEN:

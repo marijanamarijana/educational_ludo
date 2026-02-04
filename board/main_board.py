@@ -7,21 +7,20 @@ GRID_SIZE = 15
 FPS = 13
 
 WHITE = (230, 240, 255)
-BLACK = (12, 13, 12)
+BLACK = (10, 18, 30)
 GRAY = (25, 35, 50)
-
 RED = (255, 0, 0)
-PURPLE = (189, 0, 255)
-GREEN = (59, 168, 12)
-BLUE = (0, 30, 255)
-YELLOW = (211, 218, 6)
-
-LIGHT_PURPLE = (253, 0, 255)
-LIGHT_GREEN = (10, 60, 20)
-LIGHT_BLUE = (0, 205, 255)
-LIGHT_YELLOW = (247, 255, 0)
-
 DARK_GREY = (40, 50, 65)
+
+PURPLE = (170, 60, 255)
+GREEN = (0, 255, 140)
+BLUE = (0, 170, 255)
+YELLOW = (255, 210, 60)
+
+LIGHT_PURPLE = (220, 170, 255)
+LIGHT_GREEN = (170, 255, 210)
+LIGHT_BLUE = (170, 220, 255)
+LIGHT_YELLOW = (255, 240, 170)
 
 DUEL_BG = (10, 20, 30, 200)
 DUEL_CYAN = BLUE
@@ -54,7 +53,7 @@ def draw_board(players, color):
                 cell,
                 cell
             )
-            pygame.draw.rect(screen, (15,20,30), rect)
+            pygame.draw.rect(screen, (15, 20, 30), rect)
             pygame.draw.rect(screen, GRAY, rect, 1)
 
     pawns = draw_homes(screen, board_x, board_y, players)
@@ -381,7 +380,7 @@ def draw_versus_screen(p1_name, p2_name, p1_color, p2_color):
 
 
 def draw_win_screen(winner):
-    screen.fill(WHITE)
+    screen.fill(BLACK)
     draw_text(screen, f"{winner.name.upper()} ПОБЕДИ!", WIDTH // 2 - 120, HEIGHT // 2 - 40, 64, winner.color)
     draw_text(screen, "Притисни ESC за излез", WIDTH // 2 - 110, HEIGHT // 2 + 40, 32)
 
@@ -408,7 +407,7 @@ def draw_quiz_intro_overlay(quiz_bg):
     pygame.display.flip()
 
 
-def draw_quiz(questions, quiz_bg):
+def draw_quiz(questions):
     tmp = questions.pop(random.randint(0, len(questions) - 1))
     question = tmp["question"]
     options = tmp["options"]
@@ -486,6 +485,7 @@ def draw_quiz(questions, quiz_bg):
 
     return is_correct
 
+
 def draw_duel_overlay(duel_info, my_player_id):
     q_idx = duel_info["q_index"]
     question_data = duel_info["questions"][q_idx]
@@ -493,9 +493,10 @@ def draw_duel_overlay(duel_info, my_player_id):
     my_answers = duel_info["p1_answers"] if my_player_id == duel_info["p1"] else duel_info["p2_answers"]
 
     if str(q_idx) in my_answers:
-        screen.fill(WHITE)
+        screen.fill(BLACK)
         draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/3)", WIDTH // 2, HEIGHT // 2, 30, PURPLE)
         pygame.display.flip()
+        clock.tick(FPS)
         return None
 
     return draw_quiz([question_data])

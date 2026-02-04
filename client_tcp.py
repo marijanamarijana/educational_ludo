@@ -8,7 +8,7 @@ from board.players import Player
 from board.dice import load_images, draw_dice, roll_dice
 from data.multiple_choice_questions import questions as multiple_choice_questions
 from data.true_false_questions import questions as true_false_questions
-from board.main_board import RED, GREEN, YELLOW, BLUE
+from board.main_board import PURPLE, GREEN, BLUE, YELLOW
 
 
 pygame.init()
@@ -19,7 +19,6 @@ load_images()
 quiz_bg_image = pygame.image.load('images/quiz_background.jpg')
 quiz_bg_image = pygame.transform.scale(quiz_bg_image, (900, 800))
 
-# server_socket = None
 game_state = None
 my_player_id = None
 lobby_code = ""
@@ -36,7 +35,7 @@ HOST = "127.0.0.1" # for local
 PORT = 62743
 
 COLOR_ENUM = {
-    "red": RED,
+    "purple": PURPLE,
     "green": GREEN,
     "blue": BLUE,
     "yellow": YELLOW
@@ -129,7 +128,7 @@ def create_player_objects(state):
     for p_id, pdata in state["players"].items():
         if not pdata.get("name") or not pdata.get("color"):
             continue
-        color_const = COLOR_ENUM.get(pdata["color"].lower(), RED)
+        color_const = COLOR_ENUM.get(pdata["color"].lower(), PURPLE)
         player = Player(pdata["name"], color_const)
         player.pawns = pdata["pawns"][:]
         player.finished = pdata["finished"][:]
@@ -142,7 +141,7 @@ def main():
     connect()
     state = "MENU"
     color_choices = [
-        (RED, "red"),
+        (PURPLE, "purple"),
         (GREEN, "green"),
         (BLUE, "blue"),
         (YELLOW, "yellow")
@@ -161,17 +160,17 @@ def main():
     while running:
         clock.tick(FPS)
         mouse_pos = pygame.mouse.get_pos()
-        screen.fill(WHITE)
+        screen.fill(BLACK)
 
         if state == "MENU":
-            draw_text(screen, "LUDO MULTIPLAYER",  WIDTH // 2, HEIGHT // 2 - 120, 48, color=RED)
+            draw_text(screen, "LUDO MULTIPLAYER",  WIDTH // 2, HEIGHT // 2 - 120, 48, color=WHITE)
             btn_create = draw_button("Креирај нова игра", WIDTH // 2 - 120, HEIGHT // 2 - 40, 240, 50,
-                                     (0, 200, 0), (0, 255, 0), mouse_pos)
+                                     BLUE, LIGHT_BLUE, mouse_pos)
             btn_join = draw_button("Влези во игра", WIDTH // 2 - 120, HEIGHT // 2 + 30, 240, 50,
-                                   (0, 0, 200), (0, 0, 255), mouse_pos)
+                                   GREEN, LIGHT_GREEN, mouse_pos)
 
         elif state == "CREATE":
-            draw_text(screen,"Избери број на играчи",  WIDTH // 2, HEIGHT // 2 - 80, 36)
+            draw_text(screen,"Избери број на играчи",  WIDTH // 2, HEIGHT // 2 - 80, 36, WHITE)
             btn_2 = draw_button("2 играчи", WIDTH // 2 - 180, HEIGHT // 2 - 20, 100, 50,
                                 (100, 100, 100), (150, 150, 150), mouse_pos)
             btn_3 = draw_button("3 играчи", WIDTH // 2 - 60, HEIGHT // 2 - 20, 100, 50,
@@ -180,23 +179,23 @@ def main():
                                 (100, 100, 100), (150, 150, 150), mouse_pos)
 
         elif state == "JOIN":
-            draw_text(screen,"Внеси код на игра:",  WIDTH // 2, HEIGHT // 2 - 60, 36)
+            draw_text(screen,"Внеси код на игра:",  WIDTH // 2, HEIGHT // 2 - 60, 36, WHITE)
             draw_text(screen,temp_name.upper() + "|",  WIDTH // 2, HEIGHT // 2, 42, BLUE)
-            draw_text(screen,"Кликни ЕNTER да влезеш",  WIDTH // 2, HEIGHT // 2 + 60, 24, (100, 100, 100))
+            draw_text(screen,"Кликни ЕNTER да влезеш",  WIDTH // 2, HEIGHT // 2 + 60, 24, BLUE)
 
         elif state == "ENTER_NAME":
-            draw_text(screen,"Напиши име:",  WIDTH // 2, HEIGHT // 2 - 60, 36)
-            draw_text(screen,temp_name + "|",  WIDTH // 2, HEIGHT // 2, 42, BLUE)
+            draw_text(screen, "Напиши име:",  WIDTH // 2, HEIGHT // 2 - 60, 36, BLUE)
+            draw_text(screen, temp_name + "|",  WIDTH // 2, HEIGHT // 2, 42, BLUE)
 
             if server_error_msg:
                 draw_text(screen,server_error_msg,  WIDTH // 2, HEIGHT // 2 + 100, 24, RED)
 
-            draw_text(screen,"Кликни ЕNTER да продолжиш",  WIDTH // 2, HEIGHT // 2 + 60, 24, (100, 100, 100))
+            draw_text(screen,"Кликни ЕNTER да продолжиш",  WIDTH // 2, HEIGHT // 2 + 60, 24, WHITE)
 
         elif state == "CHOOSE_COLOR":
             server_error_msg = ""
-            draw_text(screen,"Избери боја:",  WIDTH // 2, HEIGHT // 2 - 80, 36)
-            draw_text(screen,"Кликни на боја",  WIDTH // 2, HEIGHT // 2 - 40, 24, (100, 100, 100))
+            draw_text(screen,"Избери боја:",  WIDTH // 2, HEIGHT // 2 - 80, 36, WHITE)
+            draw_text(screen,"Кликни на боја",  WIDTH // 2, HEIGHT // 2 - 40, 24, WHITE)
 
             taken_colors = []
 
@@ -209,12 +208,12 @@ def main():
             color_boxes = draw_color_choice_boxes(available_colors)
 
         elif state == "LOBBY":
-            draw_text(screen,f"Кодот за лоби {lobby_code}",  WIDTH // 2, HEIGHT // 2 - 120, 42, RED)
-            draw_text(screen,"Чекаме други играчи...",  WIDTH // 2, HEIGHT // 2 - 60, 28, (100, 100, 100))
+            draw_text(screen,f"Кодот за лоби {lobby_code}",  WIDTH // 2, HEIGHT // 2 - 120, 42, WHITE)
+            draw_text(screen,"Чекаме други играчи...",  WIDTH // 2, HEIGHT // 2 - 60, 28, (100, 100, 100), BLUE)
 
             if is_host and game_state and len([p for p in game_state["players"].values() if p.get("name")]) >= 2:
                 btn_start = draw_button("ПОЧНИ", WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50,
-                                        (0, 200, 0), (0, 255, 0), mouse_pos)
+                                        GREEN, LIGHT_GREEN, mouse_pos)
 
             if game_state:
                 y = HEIGHT // 2
@@ -226,7 +225,7 @@ def main():
                         pygame.draw.circle(screen, color_rgb, (WIDTH // 2 - 150, y + 5), 15)
 
                     display_name = f"{name} (ТИ)" if p_uuid == my_player_id else name
-                    draw_text(screen,display_name,  WIDTH // 2, y, 26)
+                    draw_text(screen,display_name,  WIDTH // 2, y, 26, WHITE)
                     y += 40
 
             if game_state and game_state.get("game_started"):
@@ -273,7 +272,7 @@ def main():
             players_list = []
             for player_id, pdata in game_state["players"].items():
                 if pdata["name"] and pdata["color"]:
-                    color_const = COLOR_ENUM.get(pdata["color"].lower(), RED)
+                    color_const = COLOR_ENUM.get(pdata["color"].lower(), PURPLE)
                     new_player = Player(pdata["name"], color_const)
                     new_player.pawns = pdata["pawns"]
                     players[player_id] = new_player
@@ -288,7 +287,7 @@ def main():
                 continue
             curr_data = game_state["players"][turn_id]
 
-            curr_color = COLOR_ENUM.get(curr_data["color"].lower(), RED)
+            curr_color = COLOR_ENUM.get(curr_data["color"].lower(), PURPLE)
             curr = Player(curr_data["name"], curr_color)
             curr.pawns = curr_data["pawns"]
 
@@ -412,7 +411,7 @@ def main():
 
                             if len(questions) < 1:
                                 questions = list(multiple_choice_questions + true_false_questions)
-                            result = draw_quiz(questions, quiz_bg_image)
+                            result = draw_quiz(questions)
                             final_move = quiz_moves if result else -quiz_moves
 
                             send_move(chosen_idx, final_move, move_type="quiz")
@@ -421,7 +420,7 @@ def main():
 
                     else:
                         draw_text_with_box_around(screen, "Прво мораш да имаш пионче на таблата!",
-                                                  WIDTH // 2, HEIGHT // 2, text_size=26, text_color=RED)
+                                                  WIDTH // 2, HEIGHT // 2, text_size=26, text_color=WHITE, box_color=BLUE)
                         pygame.display.flip()
                         time.sleep(1.5)
 
