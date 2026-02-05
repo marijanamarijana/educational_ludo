@@ -24,12 +24,13 @@ class Lobby:
         self.code = code
         self.host = host_conn
         self.max_players = max_players
-        self.players = {} # { "uuid": {"conn": conn, "name": "...", "color": "..."} }
+        self.players = {}
         self.player_order = []
         self.game_state = {
             "players": {},
             "turn_id": None,
             "game_started": False,
+            "winner_id": None,
             "duel": {
                 "active": False,
                 "phase": "INTRO",
@@ -112,6 +113,13 @@ class Lobby:
             self.game_state["turn_id"] = self.player_order[next_idx]
         except ValueError:
             self.game_state["turn_id"] = self.player_order[0]
+
+    def check_winner(self):
+        for pid, pdata in self.game_state["players"].items():
+            if all(pdata["finished"]):
+                self.game_state["winner_id"] = pid
+                return pid
+        return None
 
 
 def handle_client(conn, addr):
@@ -203,6 +211,10 @@ def handle_client(conn, addr):
                         except:
                             continue
                     if p_idx == -1:
+                        winner = lobby.check_winner()
+                        if winner:
+                            lobby.broadcast()
+                            continue
                         lobby.pass_turn()
                         lobby.broadcast()
                         continue
@@ -214,6 +226,10 @@ def handle_client(conn, addr):
                             p_data[p_idx] += steps
                     if p_data[p_idx] < 0:
                         p_data[p_idx] = 0
+                    winner = lobby.check_winner()
+                    if winner:
+                        lobby.broadcast()
+                        continue
                     lobby.pass_turn()
                     lobby.broadcast()
 

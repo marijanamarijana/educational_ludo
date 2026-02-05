@@ -181,6 +181,7 @@ def main():
     active_rects = {}
     home_pawns = {}
     duel_intro_seen = False
+    winner_id = None
 
     running = True
     while running:
@@ -262,6 +263,11 @@ def main():
                 waiting_for_pawn = False
 
         elif state == "PLAYING" and game_state:
+            if game_state.get("winner_id"):
+                winner_id = game_state["winner_id"]
+                state = "WIN"
+                continue
+
             duel = game_state.get("duel", {})
             if duel.get("active"):
                 p1_data = game_state["players"][duel["p1"]]
@@ -349,6 +355,15 @@ def main():
             for player in players_list:
                 draw_text(screen, player.name, 20, name_y, 20, player.color, center=False)
                 name_y += 30
+
+        elif state == "WIN":
+            winner_data = game_state["players"][WINNER_ID]
+            winner = Player(
+                winner_data["name"],
+                COLOR_ENUM[winner_data["color"].lower()]
+            )
+            draw_win_screen(winner)
+            draw_text(screen, "Притисни ESC за излез", WIDTH // 2, HEIGHT // 2 + 80, 28, WHITE)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -495,6 +510,12 @@ def main():
                             network_send({"type": "move", "pawn": chosen_idx, "dice": current_dice_value})
                             current_dice_value = -1
                             waiting_for_pawn = False
+
+            elif state == "WIN" and event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    state = "MENU"
+                    network_send({"type": "exit", "player": my_player_id})
+                    reset_local_game_data()
 
         pygame.display.flip()
 
