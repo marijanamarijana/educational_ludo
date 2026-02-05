@@ -491,7 +491,6 @@ def draw_duel_overlay(duel_info, my_player_id):
     question_data = duel_info["questions"][q_idx]
 
     my_answers = duel_info["p1_answers"] if my_player_id == duel_info["p1"] else duel_info["p2_answers"]
-    print(f"q_idx: {q_idx}, my_answers: {my_answers}")
     if str(q_idx) in my_answers:
         screen.fill(BLACK)
         draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/3)", WIDTH // 2, HEIGHT // 2, 30, RED)

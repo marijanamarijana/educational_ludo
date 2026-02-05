@@ -1,17 +1,27 @@
+import os
+import sys
 from board.main_board import *
 from board.main_board import GREEN, YELLOW
 
 dice_images = []
 dice_rolling_images = []
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 def load_images():
     for num in range(1, 7):
-        dice_image = pygame.image.load('images/dice/' + str(num) + '.png')
+        dice_image = pygame.image.load(resource_path('images/dice/' + str(num) + '.png'))
         dice_image = pygame.transform.scale(dice_image, (cell * 2, cell * 2))
         dice_images.append(dice_image)
 
     for num in range(1, 9):
-        dice_rolling_image = pygame.image.load('images/animation/roll' + str(num) + '.png')
+        dice_rolling_image = pygame.image.load(resource_path('images/animation/roll' + str(num) + '.png'))
         dice_rolling_image = pygame.transform.scale(dice_rolling_image, (cell * 2, cell * 2))
         dice_rolling_images.append(dice_rolling_image)
 
@@ -45,7 +55,6 @@ def roll_dice(surface, color, num):
     x = board_x + gx * cell + cell * 3.25
 
     while is_rolling:
-        # cover the previous dice image so it doesn't show during animation
         inside = pygame.Rect(x + cell // 2, y + cell // 2, cell * 2, cell * 2)
         pygame.draw.rect(surface, WHITE, inside)
 
@@ -57,9 +66,6 @@ def roll_dice(surface, color, num):
         if rolling_images_counter >= 8:
             is_rolling = False
             rolling_images_counter = 0
-
-    num = 6
-        #random.randint(1, 6)
 
     draw_dice(surface, color, num)
 

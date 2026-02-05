@@ -1,6 +1,8 @@
 import json, threading, socket
+import os
 import sys
 import time
+import pygame.time
 
 from board.game_play import *
 from board.main_board import *
@@ -14,9 +16,6 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Multiplayer Ludo")
 clock = pygame.time.Clock()
-load_images()
-quiz_bg_image = pygame.image.load('images/quiz_background.jpg')
-quiz_bg_image = pygame.transform.scale(quiz_bg_image, (900, 800))
 
 game_state = None
 my_player_id = None
@@ -41,7 +40,18 @@ COLOR_ENUM = {
     "yellow": YELLOW
 }
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 questions = list(multiple_choice_questions + true_false_questions)
+load_images()
+quiz_bg_image = pygame.image.load(resource_path('images/quiz_background.jpg'))
+quiz_bg_image = pygame.transform.scale(quiz_bg_image, (900, 800))
 
 
 def network_send(payload):
@@ -455,12 +465,13 @@ def main():
 
                     if dice_rect and dice_rect.collidepoint(event.pos) and current_dice_value == -1:
                         current_dice_value = (random.randint(1, 6))
+                        # current_dice_value = 6
                         network_send({"type": "rolling_dice", "value": current_dice_value})
                         roll_dice(screen, curr_color, current_dice_value)
-                        current_dice_value = 6
                         has_pawn_on_board = any(p >= 0 for p in curr.pawns)
 
                         if current_dice_value != 6 and not has_pawn_on_board:
+                            pygame.time.delay(200)
                             network_send({"type": "move", "pawn": -1, "dice": current_dice_value})
                             current_dice_value = -1
                             waiting_for_pawn = False
