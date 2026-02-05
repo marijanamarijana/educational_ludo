@@ -142,8 +142,7 @@ def handle_client(conn, addr):
                 code = msg.get("code")
                 with lock:
                     lobby = lobbies.get(code)
-                    print(len(lobby.players))
-                    if not lobby or len(lobby.players) >= lobby.max_players:
+                    if lobby is None or len(lobby.players) >= lobby.max_players:
                         err = {"type": "error", "message": "Lobby full or does not exist"}
                         conn.sendall(len(json.dumps(err).encode()).to_bytes(4, "big") + json.dumps(err).encode())
                         continue
@@ -254,20 +253,27 @@ def handle_client(conn, addr):
                         lobby.resolve_duel()
                 lobby.broadcast()
 
+            elif t == "exit":
+                player_id = msg.get("player")
+                print("player clicked menu")
+                with lock:
+                    if player_id in lobby.players:
+                        lobby.remove_player(player_id)
+                        lobby.broadcast()
+
+                    if not lobby.players and lobby.code in lobbies:
+                        del lobbies[lobby.code]
+                        print("Lobby deleted, no players left.")
+
+
+
     except Exception as e:
         print("Client disconnected:", e)
     finally:
         if lobby and player_id is not None:
             with lock:
                 if player_id in lobby.players:
-                    if lobby.game_state.get("turn_id") == player_id:
-                        print("Passed turn")
-                        lobby.pass_turn()
-
-                    print(f"Removed player {player_id}, {lobby.game_state['players'][player_id]['name']}")
-                    lobby.player_order.remove(player_id)
-                    del lobby.players[player_id]
-                    del lobby.game_state["players"][player_id]
+                    lobby.remove_player(player_id)
                     lobby.broadcast()
 
                 if not lobby.players and lobby.code in lobbies:
