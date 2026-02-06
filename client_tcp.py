@@ -291,7 +291,7 @@ def main():
                     duel_intro_seen = False
 
                     if my_player_id in [duel["p1"], duel["p2"]]:
-                        res = draw_duel_overlay(duel, my_player_id, mouse_pos)
+                        res = draw_duel_overlay(duel, my_player_id)
                         if res is not None:
                             network_send({"type": "duel_answer", "player": my_player_id, "correct": res})
                             pygame.event.clear()
@@ -468,7 +468,7 @@ def main():
 
                                 if len(questions) < 1:
                                     questions = list(multiple_choice_questions + true_false_questions)
-                                result = draw_quiz(questions, mouse_pos)
+                                result = draw_quiz(questions)
                                 final_move = quiz_moves if result else -quiz_moves
 
                                 send_move(chosen_idx, final_move, move_type="quiz")

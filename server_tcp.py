@@ -229,13 +229,14 @@ def handle_client(conn, addr):
                             p_data[p_idx] = 0
                         elif p_data[p_idx] != -1:
                             lobby.game_state["moving"] = True
-                            for i in range(steps):
+                            for i in range(abs(steps)):
                                 p_data[p_idx] += 1 if steps>0 else -1
+
+                                if p_data[p_idx] < 0:
+                                    p_data[p_idx] = 0
+
                                 lobby.broadcast()
                                 pygame.time.delay(150)
-
-                    if p_data[p_idx] < 0:
-                        p_data[p_idx] = 0
 
                     winner = lobby.check_winner()
                     if winner:

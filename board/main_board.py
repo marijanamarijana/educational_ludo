@@ -1,4 +1,6 @@
 import random
+import sys
+
 import pygame
 
 WIDTH, HEIGHT = 900, 800
@@ -420,7 +422,7 @@ def draw_quiz_intro_overlay(quiz_bg):
     pygame.display.flip()
 
 
-def draw_quiz(questions, mouse_pos):
+def draw_quiz(questions):
     tmp = questions.pop(random.randint(0, len(questions) - 1))
     question = tmp["question"]
     options = tmp["options"]
@@ -428,6 +430,10 @@ def draw_quiz(questions, mouse_pos):
 
     win_w, win_h = 700, 500
     win_rect = pygame.Rect((WIDTH - win_w) // 2, (HEIGHT - win_h) // 2, win_w, win_h)
+
+    total_chars = len(question) + sum(len(opt) for opt in options)
+    time_limit = total_chars * 0.075
+    start_ticks = pygame.time.get_ticks()
 
     pygame.draw.rect(screen, (5, 15, 25), win_rect, border_radius=15)
     pygame.draw.rect(screen, DUEL_CYAN, win_rect, 3, border_radius=15)
@@ -452,58 +458,65 @@ def draw_quiz(questions, mouse_pos):
             draw_text(screen, f"{question[idx2:]}", WIDTH // 2, y_offset, size=24, color=WHITE)
 
     y_offset += 40
-    opt_offset = y_offset
-    buttons = []
-    for i, opt in enumerate(options):
-        if len(opt) > 50:
-            idx = opt[:50].rfind(' ')
-            opt_rect = pygame.Rect(win_rect.x + 50, y_offset, win_w - 100, 90)
-            pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
-            buttons.append(draw_button(f"{opt[:idx]}\n{opt[idx:]}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h, (20, 40, 60), LIGHT_BLUE, mouse_pos, True))
-            y_offset += 100
-        else:
-            opt_rect = pygame.Rect(win_rect.x + 50, y_offset, win_w - 100, 45)
-            pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
-            buttons.append(draw_button(f"{opt}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h, (20, 40, 60), LIGHT_BLUE, mouse_pos, True))
-            y_offset += 55
-
-    pygame.display.flip()
-
     selected = -1
-    while selected == -1:
+    timed_out = False
+
+    while selected == -1 and not timed_out:
+        seconds_passed = (pygame.time.get_ticks() - start_ticks) / 1000.0
+        time_left = max(0, int(time_limit - seconds_passed))
+
+        if time_left <= 0:
+            timed_out = True
+            break
+
         mouse_pos = pygame.mouse.get_pos()
-        tmp_offset = opt_offset
+        tmp_offset = y_offset
+        buttons = []
+
+        timer_rect_bg = pygame.Rect(win_rect.x + 50, win_rect.bottom - 40, win_rect.w - 100, 15)
+        pygame.draw.rect(screen, (30, 30, 30), timer_rect_bg, border_radius=5)
+
+        pct = time_left / time_limit
+        timer_w = (win_rect.w - 100) * pct
+        timer_color = (int(255 * (1 - pct)), int(255 * pct), 0)
+        pygame.draw.rect(screen, timer_color, (timer_rect_bg.x, timer_rect_bg.y, timer_w, 15), border_radius=5)
+
         for i, opt in enumerate(options):
             if len(opt) > 50:
                 idx = opt[:50].rfind(' ')
                 opt_rect = pygame.Rect(win_rect.x + 50, tmp_offset, win_w - 100, 90)
                 pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
 
-                draw_button(f"{opt[:idx]}\n{opt[idx:]}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h,
-                                (20, 40, 60), LIGHT_BLUE, mouse_pos, True)
+                buttons.append(draw_button(f"{opt[:idx]}\n{opt[idx:]}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h,
+                                (20, 40, 60), LIGHT_BLUE, mouse_pos, True))
                 tmp_offset += 100
             else:
                 opt_rect = pygame.Rect(win_rect.x + 50, tmp_offset, win_w - 100, 45)
                 pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
 
-                draw_button(f"{opt}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h,
-                                (20, 40, 60), LIGHT_BLUE, mouse_pos, True)
+                buttons.append(draw_button(f"{opt}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h,
+                                (20, 40, 60), LIGHT_BLUE, mouse_pos, True))
                 tmp_offset += 55
 
         pygame.display.flip()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit();
-                exit()
+                pygame.quit()
+                sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for i, btn in enumerate(buttons):
                     if btn.collidepoint(event.pos):
                         selected = i
 
     is_correct = (selected == answer)
-    feedback_color = DUEL_LIME if is_correct else RED
-    feedback_text = "ТОЧНО" if is_correct else "ПОГРЕШНО"
+
+    if timed_out:
+        feedback_text = "ВРЕМЕТО ИСТЕЧЕ!"
+        feedback_color = RED
+    else:
+        feedback_color = DUEL_LIME if is_correct else RED
+        feedback_text = "ТОЧНО" if is_correct else "ПОГРЕШНО"
 
     flash_rect = win_rect.inflate(-20, -20)
     pygame.draw.rect(screen, feedback_color, flash_rect, 5, border_radius=10)
@@ -514,7 +527,7 @@ def draw_quiz(questions, mouse_pos):
     return is_correct
 
 
-def draw_duel_overlay(duel_info, my_player_id, mouse_pos):
+def draw_duel_overlay(duel_info, my_player_id):
     q_idx = duel_info["q_index"]
     question_data = duel_info["questions"][q_idx]
 
@@ -525,5 +538,5 @@ def draw_duel_overlay(duel_info, my_player_id, mouse_pos):
         pygame.display.flip()
         return None
 
-    return draw_quiz([question_data], mouse_pos)
+    return draw_quiz([question_data])
 
