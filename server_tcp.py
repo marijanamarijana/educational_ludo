@@ -72,6 +72,11 @@ class Lobby:
         else:
             self.game_state["players"][p1_id]["pawns"][p1_pawn] = -1
 
+        self.reset_duel()
+        self.pass_turn()
+
+    def reset_duel(self):
+        duel = self.game_state["duel"]
         duel["active"] = False
         duel["p1_answers"] = {}
         duel["p2_answers"] = {}
@@ -79,7 +84,9 @@ class Lobby:
         duel["p1"] = None
         duel["p2"] = None
         duel["phase"] = "INTRO"
-        self.pass_turn()
+        duel["questions"] = []
+        duel["target_pawn"] = None
+        duel["trigger_pawn"] = None
 
     def switch_duel_to_quiz(self):
         if self.game_state["duel"]["active"]:
@@ -273,7 +280,7 @@ def handle_client(conn, addr):
                     "q_index": 0,
                     "p1_answers": {},
                     "p2_answers": {},
-                    "questions": random.sample(lobby.questions, 3)
+                    "questions": random.sample(lobby.questions, 5)
                 })
                 lobby.broadcast()
 
@@ -287,7 +294,7 @@ def handle_client(conn, addr):
                     duel["p2_answers"][str(q_idx)] = msg["correct"]
 
                 if str(q_idx) in duel["p1_answers"] and str(q_idx) in duel["p2_answers"]:
-                    if duel["q_index"] < 2:
+                    if duel["q_index"] < 4:
                         duel["q_index"] += 1
                     else:
                         lobby.resolve_duel()
@@ -313,6 +320,8 @@ def handle_client(conn, addr):
         if lobby and player_id is not None:
             with lock:
                 if player_id in lobby.players:
+                    if player_id in (duel["p1"], duel["p2"]):
+                        lobby.reset_duel()
                     lobby.remove_player(player_id)
                     lobby.broadcast()
 
