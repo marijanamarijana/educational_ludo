@@ -348,10 +348,10 @@ def main():
                     roll_dice(screen, curr.color, rolled_dice)
                     trigger_roll = False
                     pygame.time.delay(200)
-                elif rolled_dice:
-                    dice_rect = draw_dice(screen, curr_color, rolled_dice if rolled_dice > 0 else 1)
+                else:
+                    dice_rect = draw_dice(screen, curr_color, rolled_dice if rolled_dice else 1)
             else:
-                dice_rect = draw_dice(screen, curr_color, current_dice_value if current_dice_value > 0 else 1)
+                dice_rect = draw_dice(screen, curr_color, rolled_dice if rolled_dice else 1)
 
             draw_text(screen, f"CODE: {lobby_code}", 20, 30, 20, WHITE, center=False)
 

@@ -214,12 +214,6 @@ def handle_client(conn, addr):
             elif t == "move":
                 if lobby and player_id == lobby.game_state["turn_id"]:
                     p_idx, steps = msg.get("pawn", -1), msg.get("dice", 0)
-                    data = json.dumps({"type": "dice_state", "value": None}).encode('utf-8')
-                    for p in lobby.players:
-                        try:
-                            lobby.players[p]["conn"].sendall(len(data).to_bytes(4, 'big') + data)
-                        except:
-                            continue
 
                     if p_idx == -1:
                         winner = lobby.check_winner()
@@ -251,6 +245,12 @@ def handle_client(conn, addr):
                         continue
 
                     lobby.game_state["moving"] = False
+                    data = json.dumps({"type": "dice_state", "value": None}).encode('utf-8')
+                    for p in lobby.players:
+                        try:
+                            lobby.players[p]["conn"].sendall(len(data).to_bytes(4, 'big') + data)
+                        except:
+                            continue
                     lobby.pass_turn()
                     lobby.broadcast()
 
