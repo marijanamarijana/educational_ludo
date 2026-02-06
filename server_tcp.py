@@ -18,7 +18,7 @@ lock = threading.Lock()
 
 
 def generate_code():
-    return ''.join(random.choices(string.ascii_uppercase, k=4))
+    return ''.join(random.choices(string.ascii_uppercase, k=6))
 
 
 class Lobby:
@@ -161,7 +161,7 @@ def handle_client(conn, addr):
                 with lock:
                     lobby = lobbies.get(code)
                     if lobby is None or len(lobby.players) >= lobby.max_players:
-                        err = {"type": "error", "message": "Lobby full or does not exist"}
+                        err = {"type": "error", "message": "Лобито е полно или не постои"}
                         conn.sendall(len(json.dumps(err).encode()).to_bytes(4, "big") + json.dumps(err).encode())
                         continue
                     player_id = lobby.add_player(conn)

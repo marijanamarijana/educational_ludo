@@ -103,9 +103,8 @@ def run_listener():
                 trigger_roll = True if rolled_dice else False
             elif t == "error":
                 server_error_msg = msg.get("message")
-                if server_error_msg == "Lobby full or does not exist":
+                if server_error_msg == "Лобито е полно или не постои":
                     state = "MENU"
-                    server_error_msg = None
                 else:
                     state = "ENTER_NAME"
         except:
@@ -194,13 +193,18 @@ def main():
         screen.fill(BLACK)
 
         if state == "MENU":
-            draw_text(screen, "LUDO MULTIPLAYER", WIDTH // 2, HEIGHT // 2 - 120, 48, color=WHITE)
-            btn_create = draw_button("Креирај нова игра", WIDTH // 2 - 120, HEIGHT // 2 - 40, 240, 50,
+            draw_text(screen, "LUDO", WIDTH // 2, HEIGHT // 2 - 120, 48, color=WHITE)
+            btn_create = draw_button("Креирај ново лоби", WIDTH // 2 - 120, HEIGHT // 2 - 40, 240, 50,
                                      BLUE, LIGHT_BLUE, mouse_pos)
-            btn_join = draw_button("Влези во игра", WIDTH // 2 - 120, HEIGHT // 2 + 30, 240, 50,
+            btn_join = draw_button("Влези во лоби", WIDTH // 2 - 120, HEIGHT // 2 + 30, 240, 50,
                                    GREEN, LIGHT_GREEN, mouse_pos)
 
+            if server_error_msg:
+                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 110, 28, color=RED)
+
+
         elif state == "CREATE":
+            server_error_msg = None
             draw_text(screen, "Избери број на играчи", WIDTH // 2, HEIGHT // 2 - 80, 36, WHITE)
             btn_2 = draw_button("2 играчи", WIDTH // 2 - 180, HEIGHT // 2 - 20, 100, 50,
                                 (100, 100, 100), (150, 150, 150), mouse_pos)
@@ -210,7 +214,8 @@ def main():
                                 (100, 100, 100), (150, 150, 150), mouse_pos)
 
         elif state == "JOIN":
-            draw_text(screen, "Внеси код на игра:", WIDTH // 2, HEIGHT // 2 - 60, 36, WHITE)
+            server_error_msg = None
+            draw_text(screen, "Внеси код на лоби:", WIDTH // 2, HEIGHT // 2 - 60, 36, WHITE)
             draw_text(screen, temp_name.upper() + "|", WIDTH // 2, HEIGHT // 2, 42, BLUE)
             draw_text(screen, "Кликни ЕNTER да влезеш", WIDTH // 2, HEIGHT // 2 + 60, 24, BLUE)
 
@@ -402,12 +407,12 @@ def main():
                     temp_name = ""
 
             elif state == "JOIN" and event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN and len(temp_name) >= 4:
+                if event.key == pygame.K_RETURN and len(temp_name) == 6:
                     network_send({"type": "join_lobby", "code": temp_name.upper()})
                     temp_name = ""
                 elif event.key == pygame.K_BACKSPACE:
                     temp_name = temp_name[:-1]
-                elif len(temp_name) < 4 and event.unicode.isalnum():
+                elif len(temp_name) < 6 and event.unicode.isalnum():
                     temp_name += event.unicode
 
             elif state == "ENTER_NAME" and event.type == pygame.KEYDOWN:
