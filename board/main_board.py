@@ -348,7 +348,7 @@ def draw_color_choice_boxes(colors, y_start=None):
     return boxes
 
 
-def draw_button(text, x, y, w, h, color, hover_color, mouse_pos):
+def draw_button(text, x, y, w, h, color, hover_color, mouse_pos, quiz_btn=False):
     rect = pygame.Rect(x, y, w, h)
     is_hover = rect.collidepoint(mouse_pos)
 
@@ -356,9 +356,22 @@ def draw_button(text, x, y, w, h, color, hover_color, mouse_pos):
     pygame.draw.rect(screen, (0, 0, 0), rect, 3, border_radius=8)
 
     font = pygame.font.Font(None, 28)
-    text_surf = font.render(text, True, (255, 255, 255) if is_hover else (0, 0, 0))
-    text_rect = text_surf.get_rect(center=rect.center)
-    screen.blit(text_surf, text_rect)
+
+    if quiz_btn:
+        lines = text.split('\n')
+
+        total_height = len(lines) * 28
+        start_y = rect.centery - (total_height // 2)
+
+        for i, line in enumerate(lines):
+            line_surf = font.render(line, True, WHITE if is_hover else DUEL_LIME)
+            line_rect = line_surf.get_rect(center=(rect.centerx, start_y + (i * 28) + 14))
+            screen.blit(line_surf, line_rect)
+
+    else:
+        text_surf = font.render(text, True, (255, 255, 255) if is_hover else (0, 0, 0))
+        text_rect = text_surf.get_rect(center=rect.center)
+        screen.blit(text_surf, text_rect)
 
     return rect
 
@@ -407,7 +420,7 @@ def draw_quiz_intro_overlay(quiz_bg):
     pygame.display.flip()
 
 
-def draw_quiz(questions):
+def draw_quiz(questions, mouse_pos):
     tmp = questions.pop(random.randint(0, len(questions) - 1))
     question = tmp["question"]
     options = tmp["options"]
@@ -439,39 +452,54 @@ def draw_quiz(questions):
             draw_text(screen, f"{question[idx2:]}", WIDTH // 2, y_offset, size=24, color=WHITE)
 
     y_offset += 40
+    opt_offset = y_offset
+    buttons = []
     for i, opt in enumerate(options):
         if len(opt) > 50:
             idx = opt[:50].rfind(' ')
             opt_rect = pygame.Rect(win_rect.x + 50, y_offset, win_w - 100, 90)
-            pygame.draw.rect(screen, (20, 40, 60), opt_rect, border_radius=5)
             pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
-
-            draw_text(screen, f"[{i + 1}]", opt_rect.x + 25, opt_rect.centery-22, 22, DUEL_LIME)
-            draw_text(screen, opt[:idx], opt_rect.x + 55, opt_rect.centery-30, 20, WHITE, center=False)
-            draw_text(screen, opt[idx:], opt_rect.x + 55, opt_rect.centery, 20, WHITE, center=False)
+            buttons.append(draw_button(f"{opt[:idx]}\n{opt[idx:]}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h, (20, 40, 60), LIGHT_BLUE, mouse_pos, True))
             y_offset += 100
         else:
             opt_rect = pygame.Rect(win_rect.x + 50, y_offset, win_w - 100, 45)
-            pygame.draw.rect(screen, (20, 40, 60), opt_rect, border_radius=5)
             pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
-
-            draw_text(screen, f"[{i + 1}]", opt_rect.x + 25, opt_rect.centery-2, 22, DUEL_LIME)
-            draw_text(screen, opt, opt_rect.x + 55, opt_rect.centery-10, 20, WHITE, center=False)
+            buttons.append(draw_button(f"{opt}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h, (20, 40, 60), LIGHT_BLUE, mouse_pos, True))
             y_offset += 55
 
     pygame.display.flip()
 
     selected = -1
     while selected == -1:
+        mouse_pos = pygame.mouse.get_pos()
+        tmp_offset = opt_offset
+        for i, opt in enumerate(options):
+            if len(opt) > 50:
+                idx = opt[:50].rfind(' ')
+                opt_rect = pygame.Rect(win_rect.x + 50, tmp_offset, win_w - 100, 90)
+                pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
+
+                draw_button(f"{opt[:idx]}\n{opt[idx:]}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h,
+                                (20, 40, 60), LIGHT_BLUE, mouse_pos, True)
+                tmp_offset += 100
+            else:
+                opt_rect = pygame.Rect(win_rect.x + 50, tmp_offset, win_w - 100, 45)
+                pygame.draw.rect(screen, DUEL_CYAN, opt_rect, 1, border_radius=5)
+
+                draw_button(f"{opt}", opt_rect.x, opt_rect.y, opt_rect.w, opt_rect.h,
+                                (20, 40, 60), LIGHT_BLUE, mouse_pos, True)
+                tmp_offset += 55
+
+        pygame.display.flip()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit();
                 exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1: selected = 0
-                if event.key == pygame.K_2: selected = 1
-                if event.key == pygame.K_3 and len(options) > 2: selected = 2
-                if event.key == pygame.K_4 and len(options) > 3: selected = 3
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for i, btn in enumerate(buttons):
+                    if btn.collidepoint(event.pos):
+                        selected = i
 
     is_correct = (selected == answer)
     feedback_color = DUEL_LIME if is_correct else RED
@@ -486,7 +514,7 @@ def draw_quiz(questions):
     return is_correct
 
 
-def draw_duel_overlay(duel_info, my_player_id):
+def draw_duel_overlay(duel_info, my_player_id, mouse_pos):
     q_idx = duel_info["q_index"]
     question_data = duel_info["questions"][q_idx]
 
@@ -497,5 +525,5 @@ def draw_duel_overlay(duel_info, my_player_id):
         pygame.display.flip()
         return None
 
-    return draw_quiz([question_data])
+    return draw_quiz([question_data], mouse_pos)
 

@@ -228,10 +228,8 @@ def handle_client(conn, addr):
                         if p_data[p_idx] == -1 and steps == 6:
                             p_data[p_idx] = 0
                         elif p_data[p_idx] != -1:
-                            # p_data[p_idx] += steps
                             lobby.game_state["moving"] = True
                             for i in range(steps):
-                                # steps_moved += 1
                                 p_data[p_idx] += 1 if steps>0 else -1
                                 lobby.broadcast()
                                 pygame.time.delay(150)
