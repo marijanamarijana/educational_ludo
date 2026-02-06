@@ -7,12 +7,13 @@ import pygame.time
 from board.game_play import *
 from board.main_board import *
 from board.players import Player
-from board.dice import load_images, draw_dice, roll_dice
+from board.dice import load_assets, draw_dice, roll_dice
 from data.multiple_choice_questions import questions as multiple_choice_questions
 from data.true_false_questions import questions as true_false_questions
 from board.main_board import PURPLE, GREEN, BLUE, YELLOW
 
 pygame.init()
+pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Multiplayer Ludo")
 clock = pygame.time.Clock()
@@ -41,20 +42,8 @@ COLOR_ENUM = {
     "yellow": YELLOW
 }
 
-
-def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
-
-
 questions = list(multiple_choice_questions + true_false_questions)
-load_images()
-quiz_bg_image = pygame.image.load(resource_path('images/quiz_background.jpg'))
-quiz_bg_image = pygame.transform.scale(quiz_bg_image, (900, 800))
+quiz_bg_image = load_assets()
 
 
 def network_send(payload):
