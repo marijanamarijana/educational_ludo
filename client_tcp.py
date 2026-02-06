@@ -40,6 +40,7 @@ COLOR_ENUM = {
     "yellow": YELLOW
 }
 
+
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
@@ -47,6 +48,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
 
 questions = list(multiple_choice_questions + true_false_questions)
 load_images()
@@ -333,8 +335,9 @@ def main():
             for p in players_list:
                 active_rects[p.name] = p.draw(screen, bx, by)
 
-            if is_my_turn():
-                opp_id, my_p_idx, opp_p_idx = client_check_duel(players, active_rects)
+            opp_id, my_p_idx, opp_p_idx = client_check_duel(players, active_rects)
+
+            if not game_state["moving"]:
                 if opp_id is not None:
                     network_send({
                         "type": "initiate_duel",
@@ -343,7 +346,8 @@ def main():
                         "p1_pawn": my_p_idx,
                         "p2_pawn": opp_p_idx
                     })
-            else:
+
+            if not is_my_turn():
                 if rolled_dice:
                     roll_dice(screen, curr.color, rolled_dice)
 
@@ -357,7 +361,7 @@ def main():
                 name_y += 30
 
         elif state == "WIN":
-            winner_data = game_state["players"][WINNER_ID]
+            winner_data = game_state["players"][winner_id]
             winner = Player(
                 winner_data["name"],
                 COLOR_ENUM[winner_data["color"].lower()]
@@ -480,7 +484,7 @@ def main():
 
                     if dice_rect and dice_rect.collidepoint(event.pos) and current_dice_value == -1:
                         current_dice_value = (random.randint(1, 6))
-                        # current_dice_value = 6
+                        current_dice_value = 6
                         network_send({"type": "rolling_dice", "value": current_dice_value})
                         roll_dice(screen, curr_color, current_dice_value)
                         has_pawn_on_board = any(p >= 0 for p in curr.pawns)

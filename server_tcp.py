@@ -5,6 +5,8 @@ import threading
 import json
 import uuid
 
+import pygame.time
+
 from data import multiple_choice_questions, true_false_questions
 
 # HOST = "0.0.0.0" # for cloud
@@ -31,6 +33,7 @@ class Lobby:
             "turn_id": None,
             "game_started": False,
             "winner_id": None,
+            "moving": False,
             "duel": {
                 "active": False,
                 "phase": "INTRO",
@@ -210,6 +213,7 @@ def handle_client(conn, addr):
                             lobby.players[p]["conn"].sendall(len(data).to_bytes(4, 'big') + data)
                         except:
                             continue
+
                     if p_idx == -1:
                         winner = lobby.check_winner()
                         if winner:
@@ -218,18 +222,29 @@ def handle_client(conn, addr):
                         lobby.pass_turn()
                         lobby.broadcast()
                         continue
+
                     p_data = lobby.game_state["players"][player_id]["pawns"]
                     if p_idx != -1:
                         if p_data[p_idx] == -1 and steps == 6:
                             p_data[p_idx] = 0
                         elif p_data[p_idx] != -1:
-                            p_data[p_idx] += steps
+                            # p_data[p_idx] += steps
+                            lobby.game_state["moving"] = True
+                            for i in range(steps):
+                                # steps_moved += 1
+                                p_data[p_idx] += 1 if steps>0 else -1
+                                lobby.broadcast()
+                                pygame.time.delay(150)
+
                     if p_data[p_idx] < 0:
                         p_data[p_idx] = 0
+
                     winner = lobby.check_winner()
                     if winner:
                         lobby.broadcast()
                         continue
+
+                    lobby.game_state["moving"] = False
                     lobby.pass_turn()
                     lobby.broadcast()
 
