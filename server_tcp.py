@@ -320,6 +320,7 @@ def handle_client(conn, addr):
         if lobby and player_id is not None:
             with lock:
                 if player_id in lobby.players:
+                    duel = lobby.game_state["duel"]
                     if player_id in (duel["p1"], duel["p2"]):
                         lobby.reset_duel()
                     lobby.remove_player(player_id)

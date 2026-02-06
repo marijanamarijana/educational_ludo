@@ -27,6 +27,7 @@ player_color = None
 state = "MENU"
 server_error_msg = ""
 rolled_dice = None
+trigger_roll = False
 temp_name = ""
 
 HOST = "127.0.0.1"  # for local
@@ -78,7 +79,7 @@ def send_move(pawn_index, dice_value, move_type="dice"):
 
 
 def run_listener():
-    global game_state, my_player_id, lobby_code, is_host, kill, state, server_error_msg, rolled_dice
+    global game_state, my_player_id, lobby_code, is_host, kill, state, server_error_msg, rolled_dice, trigger_roll
     while not kill:
         try:
             header = server_socket.recv(4)
@@ -99,6 +100,7 @@ def run_listener():
                 game_state = msg["game_state"]
             elif t == "dice_state":
                 rolled_dice = msg["value"]
+                trigger_roll = True if rolled_dice else False
             elif t == "error":
                 server_error_msg = msg.get("message")
                 if server_error_msg == "Lobby full or does not exist":
@@ -165,7 +167,7 @@ def reset_local_game_data():
 
 
 def main():
-    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions
+    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions, trigger_roll
     connect()
     state = "MENU"
     color_choices = [
@@ -348,11 +350,15 @@ def main():
                     })
 
             if not is_my_turn():
-                if rolled_dice:
+                if trigger_roll:
                     roll_dice(screen, curr.color, rolled_dice)
+                    trigger_roll = False
+                    pygame.time.delay(200)
+                elif rolled_dice:
+                    dice_rect = draw_dice(screen, curr_color, rolled_dice if rolled_dice > 0 else 1)
+            else:
+                dice_rect = draw_dice(screen, curr_color, current_dice_value if current_dice_value > 0 else 1)
 
-            rolled_dice = None
-            dice_rect = draw_dice(screen, curr_color, current_dice_value if current_dice_value > 0 else 1)
             draw_text(screen, f"CODE: {lobby_code}", 20, 30, 20, WHITE, center=False)
 
             name_y = 60
