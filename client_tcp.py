@@ -4,7 +4,6 @@ import sys
 import time
 import pygame.time
 
-from board.game_play import *
 from board.main_board import *
 from board.players import Player
 from board.dice import load_assets, draw_dice, roll_dice
@@ -308,6 +307,7 @@ def main():
                     color_const = COLOR_ENUM.get(pdata["color"].lower(), PURPLE)
                     new_player = Player(pdata["name"], color_const)
                     new_player.pawns = pdata["pawns"]
+                    new_player.finished = pdata["finished"]
                     players[player_id] = new_player
                     players_list.append(new_player)
 
@@ -322,6 +322,7 @@ def main():
             curr_color = COLOR_ENUM.get(curr_data["color"].lower(), PURPLE)
             curr = Player(curr_data["name"], curr_color)
             curr.pawns = curr_data["pawns"]
+            curr.finished = curr_data["finished"]
 
             bx, by, quiz_rect, home_pawns = draw_board(players_list, curr_color)
             btn_menu = draw_button("ИЗЛЕЗ", WIDTH - 150, HEIGHT - 100, 120, 50,
@@ -484,7 +485,6 @@ def main():
 
                     if dice_rect and dice_rect.collidepoint(event.pos) and current_dice_value == -1:
                         current_dice_value = (random.randint(1, 6))
-                        current_dice_value = 6
                         network_send({"type": "rolling_dice", "value": current_dice_value})
                         roll_dice(screen, curr_color, current_dice_value)
                         has_pawn_on_board = any(p >= 0 for p in curr.pawns)

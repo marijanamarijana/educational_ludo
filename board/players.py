@@ -50,9 +50,13 @@ class Player:
                 pygame.draw.circle(surface, BLACK, (int(x), int(y)), cell // 4, 2)
 
         pawn_rects = []
+
         for i, idx in enumerate(self.pawns):
             if idx == -1 or self.finished[i]:
                 continue
+
+            if idx >= len(self.path):
+                idx = len(self.path) - 1
 
             col, row = self.path[idx]
             cx = bx + col * cell + cell // 2

@@ -15,7 +15,8 @@ PORT = 62743
 
 lobbies = {}
 lock = threading.Lock()
-
+# full_path_len = 57
+LAST_INDEX = 57
 
 def generate_code():
     return ''.join(random.choices(string.ascii_uppercase, k=6))
@@ -235,6 +236,12 @@ def handle_client(conn, addr):
 
                                 if p_data[p_idx] < 0:
                                     p_data[p_idx] = 0
+
+                                if p_data[p_idx] >= LAST_INDEX:
+                                    p_data[p_idx] = LAST_INDEX
+                                    lobby.game_state["players"][player_id]["finished"][p_idx] = True
+                                    lobby.broadcast()
+                                    continue
 
                                 lobby.broadcast()
                                 pygame.time.delay(150)

@@ -540,3 +540,14 @@ def draw_duel_overlay(duel_info, my_player_id):
 
     return draw_quiz([question_data])
 
+
+def choose_pawn(pawns):
+    draw_text(screen, "Избери пионче!", 20, HEIGHT - 50, 20, center=False, color=RED)
+    pygame.display.flip()
+    selected_pawn = False
+    while not selected_pawn:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for pawn, idx in pawns:
+                    if pawn.collidepoint(event.pos):
+                        return idx
