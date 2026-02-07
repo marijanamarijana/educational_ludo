@@ -369,6 +369,7 @@ def main():
 
             if not is_my_turn():
                 if trigger_roll:
+                    print(f"triggered roll: {curr.color}, {rolled_dice}")
                     roll_dice(screen, curr.color, rolled_dice)
                     trigger_roll = False
                     pygame.time.delay(200)
@@ -530,6 +531,7 @@ def main():
                         if current_dice_value != 6 and not has_pawn_on_board:
                             pygame.time.delay(200)
                             network_send({"type": "move", "pawn": -1, "dice": current_dice_value})
+                            trigger_roll = False
                             current_dice_value = -1
                             waiting_for_pawn = False
                         else:

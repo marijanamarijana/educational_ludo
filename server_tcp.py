@@ -86,7 +86,7 @@ class Lobby:
         duel["p1"] = None
         duel["p2"] = None
         duel["phase"] = "INTRO"
-        duel["questions"] = []
+        duel["questions"] = {}
         duel["target_pawn"] = None
         duel["trigger_pawn"] = None
 
@@ -283,6 +283,13 @@ def handle_client(conn, addr):
                 p1_lang = lobby.players[msg["p1"]]["language"]
                 p2_lang = lobby.players[msg["p2"]]["language"]
 
+                random_questions_indices = random.sample(range(len(lobby.questions_per_lang["mk"])), 5)
+                p1_questions = []
+                p2_questions = []
+                for i in range(5):
+                    p1_questions.append(lobby.questions_per_lang[p1_lang][random_questions_indices[i]])
+                    p2_questions.append(lobby.questions_per_lang[p2_lang][random_questions_indices[i]])
+
                 duel.update({
                     "active": True,
                     "phase": "INTRO",
@@ -294,8 +301,8 @@ def handle_client(conn, addr):
                     "p1_answers": {},
                     "p2_answers": {},
                     "questions": {
-                        msg["p1"]: random.sample(lobby.questions_per_lang[p1_lang], 5),
-                        msg["p2"]: random.sample(lobby.questions_per_lang[p2_lang], 5)
+                        msg["p1"]: p1_questions,
+                        msg["p2"]: p2_questions
                     }
                 })
                 lobby.broadcast()
