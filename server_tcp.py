@@ -3,8 +3,8 @@ import socket
 import string
 import threading
 import json
+import time
 import uuid
-import pygame.time
 from data import multiple_choice_questions_mk, true_false_questions_mk
 from data import multiple_choice_questions_en, true_false_questions_en
 
@@ -247,7 +247,7 @@ def handle_client(conn, addr):
                                     continue
 
                                 lobby.broadcast()
-                                pygame.time.delay(150)
+                                time.sleep(0.15)
 
                     winner = lobby.check_winner()
                     if winner:
