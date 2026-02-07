@@ -169,9 +169,7 @@ def reset_local_game_data():
 def main():
     global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions, trigger_roll, language
     connect()
-    # state = "MENU"
     state = "LANG_SELECT"
-    # language = "mk"
     color_choices = [
         (PURPLE, "purple"),
         (GREEN, "green"),
@@ -253,7 +251,8 @@ def main():
             color_boxes = draw_color_choice_boxes(available_colors)
 
         elif state == "LOBBY":
-            draw_text(screen, f"{text("codi")} {lobby_code}", WIDTH // 2, HEIGHT // 2 - 120, 42, WHITE)
+            codi_text = text("codi")
+            draw_text(screen, f"{codi_text} {lobby_code}", WIDTH // 2, HEIGHT // 2 - 120, 42, WHITE)
             draw_text(screen, text("waiting_players"), WIDTH // 2, HEIGHT // 2 - 60, 28, (100, 100, 100), BLUE)
 
             if is_host and game_state and len([p for p in game_state["players"].values() if p.get("name")]) >= 2:
@@ -271,7 +270,8 @@ def main():
                         color_rgb = COLOR_ENUM.get(p_data["color"].lower(), (128, 128, 128))
                         pygame.draw.circle(screen, color_rgb, (WIDTH // 2 - 150, y + 5), 15)
 
-                    display_name = f"{name} {text("you")}" if p_uuid == my_player_id else name
+                    you_text = text("you")
+                    display_name = f"{name} {you_text}" if p_uuid == my_player_id else name
                     draw_text(screen, display_name, WIDTH // 2, y, 26, WHITE)
                     y += 40
 
@@ -314,7 +314,8 @@ def main():
                             pygame.event.clear()
                     else:
                         screen.fill(BLACK)
-                        draw_text(screen, f"{text("duel")}: {p1_data['name']} vs {p2_data['name']}",
+                        duel_text = text("duel")
+                        draw_text(screen, f"{duel_text}: {p1_data['name']} vs {p2_data['name']}",
                                   WIDTH // 2, HEIGHT // 2 - 20, 40, RED)
                         draw_text(screen, text("wait_for_other"),
                                   WIDTH // 2, HEIGHT // 2 + 40, 28, RED)

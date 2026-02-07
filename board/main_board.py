@@ -1,7 +1,7 @@
 import random
 import sys
-
 import pygame
+from data.lang import TEXT
 
 WIDTH, HEIGHT = 900, 800
 MARGIN_RATIO = 0.14
@@ -400,7 +400,8 @@ def draw_versus_screen(p1_name, p2_name, p1_color, p2_color, language):
 
 def draw_win_screen(winner, language):
     screen.fill(BLACK)
-    draw_text(screen, f"{winner.name.upper()} {text("win", language)}", WIDTH // 2 - 120, HEIGHT // 2 - 40, 64, winner.color)
+    win_text = text("win", language)
+    draw_text(screen, f"{winner.name.upper()} {win_text}", WIDTH // 2 - 120, HEIGHT // 2 - 40, 64, winner.color)
     draw_text(screen, text("press_esc", language), WIDTH // 2 - 110, HEIGHT // 2 + 40, 32)
 
 
@@ -516,7 +517,7 @@ def draw_quiz(questions, language):
     is_correct = (selected == answer)
 
     if timed_out:
-        feedback_text = text("times_upp", language)
+        feedback_text = text("times_up", language)
         feedback_color = RED
     else:
         feedback_color = DUEL_LIME if is_correct else RED
@@ -533,16 +534,17 @@ def draw_quiz(questions, language):
 
 def draw_duel_overlay(duel_info, my_player_id, language):
     q_idx = duel_info["q_index"]
-    question_data = duel_info["questions"][q_idx]
+    question_data = duel_info["questions"][my_player_id][q_idx]
 
     my_answers = duel_info["p1_answers"] if my_player_id == duel_info["p1"] else duel_info["p2_answers"]
     if str(q_idx) in my_answers:
         screen.fill(BLACK)
-        draw_text(screen, f"{text("wait_for_enemy", language)} ({q_idx + 1}/5)", WIDTH // 2, HEIGHT // 2, 30, RED)
+        text_wait = text("wait_for_enemy", language)
+        draw_text(screen, f"{text_wait} ({q_idx + 1}/5)", WIDTH // 2, HEIGHT // 2, 30, RED)
         pygame.display.flip()
         return None
 
-    return draw_quiz([question_data])
+    return draw_quiz([question_data], language)
 
 
 def choose_pawn(pawns, language):

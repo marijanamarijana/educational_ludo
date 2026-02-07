@@ -79,7 +79,7 @@ TEXT = {
         "yes": "CORRECT",
         "no" : "WRONG",
         "wait_for_enemy": "Waiting for your opponent...",
-        "choose_pawn": "Choose a pawn!",
+        "chose_pawn": "Choose a pawn!",
         "lang_title": "Choose language",
         "lang_mk": "Macedonian",
         "lang_en": "English",

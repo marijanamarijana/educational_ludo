@@ -14,7 +14,6 @@ PORT = 62743
 
 lobbies = {}
 lock = threading.Lock()
-# full_path_len = 57
 LAST_INDEX = 57
 
 def generate_code():
@@ -309,32 +308,21 @@ def handle_client(conn, addr):
                 player_questions = duel["questions"][player_id]
                 question = player_questions[q_idx]
 
-                if player_id not in duel["answers"]:
-                    duel["answers"][player_id] = {}
-                duel["answers"][player_id][str(q_idx)] = msg["correct"]
+                answers_key = "p1_answers" if player_id == duel["p1"] else "p2_answers"
 
-                all_answered = all(
-                    str(q_idx) in duel["answers"].get(pid, {}) for pid in duel["players"]
+                duel[answers_key][str(q_idx)] = msg["correct"]
+
+                all_answered = (
+                        str(q_idx) in duel["p1_answers"] and
+                        str(q_idx) in duel["p2_answers"]
                 )
 
                 if all_answered:
                     if duel["q_index"] < len(player_questions) - 1:
                         duel["q_index"] += 1
                     else:
-                        lobby.resolve_duel()  # or a generalized version for multiple players
+                        lobby.resolve_duel()
                 lobby.broadcast()
-
-                # if player_id == duel["p1"]:
-                #     duel["p1_answers"][str(q_idx)] = msg["correct"]
-                # if player_id == duel["p2"]:
-                #     duel["p2_answers"][str(q_idx)] = msg["correct"]
-                #
-                # if str(q_idx) in duel["p1_answers"] and str(q_idx) in duel["p2_answers"]:
-                #     if duel["q_index"] < 4:
-                #         duel["q_index"] += 1
-                #     else:
-                #         lobby.resolve_duel()
-                # lobby.broadcast()
 
             elif t == "exit":
                 player_id = msg.get("player")
