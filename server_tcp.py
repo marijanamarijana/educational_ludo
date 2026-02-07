@@ -4,10 +4,9 @@ import string
 import threading
 import json
 import uuid
-
 import pygame.time
-
-from data import multiple_choice_questions, true_false_questions
+from data import multiple_choice_questions_mk, true_false_questions_mk
+from data import multiple_choice_questions_en, true_false_questions_en
 
 # HOST = "0.0.0.0" # for cloud
 HOST = "127.0.0.1" # for local
@@ -45,10 +44,13 @@ class Lobby:
                 "q_index": 0,
                 "p1_answers": {},
                 "p2_answers": {},
-                "questions": []
+                "questions": {}
             }
         }
-        self.questions = list(multiple_choice_questions.questions + true_false_questions.questions)
+        self.questions_per_lang = {
+            "mk": list(multiple_choice_questions_mk.questions + true_false_questions_mk.questions),
+            "en": list(multiple_choice_questions_en.questions + true_false_questions_en.questions)
+        }
 
     def broadcast(self):
         data = json.dumps({"type": "game_state", "game_state": self.game_state}).encode('utf-8')
@@ -197,6 +199,8 @@ def handle_client(conn, addr):
                         lobby.players[player_id]["color"] = new_color
                         lobby.game_state["players"][player_id]["name"] = new_name
                         lobby.game_state["players"][player_id]["color"] = new_color
+                        player_lang = msg.get("language", "mk")  # default to mk
+                        lobby.players[player_id]["language"] = player_lang
                         lobby.broadcast()
 
             elif t == "start_game":
@@ -277,6 +281,9 @@ def handle_client(conn, addr):
             elif t == "initiate_duel":
                 duel = lobby.game_state["duel"]
                 lobby.game_state["turn_id"] = msg["p1"]
+                p1_lang = lobby.players[msg["p1"]]["language"]
+                p2_lang = lobby.players[msg["p2"]]["language"]
+
                 duel.update({
                     "active": True,
                     "phase": "INTRO",
@@ -287,7 +294,10 @@ def handle_client(conn, addr):
                     "q_index": 0,
                     "p1_answers": {},
                     "p2_answers": {},
-                    "questions": random.sample(lobby.questions, 5)
+                    "questions": {
+                        msg["p1"]: random.sample(lobby.questions_per_lang[p1_lang], 5),
+                        msg["p2"]: random.sample(lobby.questions_per_lang[p2_lang], 5)
+                    }
                 })
                 lobby.broadcast()
 
@@ -295,17 +305,36 @@ def handle_client(conn, addr):
                 duel = lobby.game_state["duel"]
                 q_idx = duel["q_index"]
                 player_id = msg["player"]
-                if player_id == duel["p1"]:
-                    duel["p1_answers"][str(q_idx)] = msg["correct"]
-                if player_id == duel["p2"]:
-                    duel["p2_answers"][str(q_idx)] = msg["correct"]
 
-                if str(q_idx) in duel["p1_answers"] and str(q_idx) in duel["p2_answers"]:
-                    if duel["q_index"] < 4:
+                player_questions = duel["questions"][player_id]
+                question = player_questions[q_idx]
+
+                if player_id not in duel["answers"]:
+                    duel["answers"][player_id] = {}
+                duel["answers"][player_id][str(q_idx)] = msg["correct"]
+
+                all_answered = all(
+                    str(q_idx) in duel["answers"].get(pid, {}) for pid in duel["players"]
+                )
+
+                if all_answered:
+                    if duel["q_index"] < len(player_questions) - 1:
                         duel["q_index"] += 1
                     else:
-                        lobby.resolve_duel()
+                        lobby.resolve_duel()  # or a generalized version for multiple players
                 lobby.broadcast()
+
+                # if player_id == duel["p1"]:
+                #     duel["p1_answers"][str(q_idx)] = msg["correct"]
+                # if player_id == duel["p2"]:
+                #     duel["p2_answers"][str(q_idx)] = msg["correct"]
+                #
+                # if str(q_idx) in duel["p1_answers"] and str(q_idx) in duel["p2_answers"]:
+                #     if duel["q_index"] < 4:
+                #         duel["q_index"] += 1
+                #     else:
+                #         lobby.resolve_duel()
+                # lobby.broadcast()
 
             elif t == "exit":
                 player_id = msg.get("player")

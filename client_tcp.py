@@ -7,9 +7,12 @@ import pygame.time
 from board.main_board import *
 from board.players import Player
 from board.dice import load_assets, draw_dice, roll_dice
-from data.multiple_choice_questions import questions as multiple_choice_questions
-from data.true_false_questions import questions as true_false_questions
+from data.multiple_choice_questions_mk import questions as multiple_choice_questions_mk
+from data.true_false_questions_mk import questions as true_false_questions_mk
+from data.multiple_choice_questions_en import questions as multiple_choice_questions_en
+from data.true_false_questions_en import questions as true_false_questions_en
 from board.main_board import PURPLE, GREEN, BLUE, YELLOW
+from data.lang import TEXT
 
 pygame.init()
 pygame.mixer.init()
@@ -24,7 +27,8 @@ is_host = False
 kill = False
 player_name = ""
 player_color = None
-state = "MENU"
+state = "LANG_SELECT"
+language = "mk"
 server_error_msg = ""
 rolled_dice = None
 trigger_roll = False
@@ -41,8 +45,16 @@ COLOR_ENUM = {
     "yellow": YELLOW
 }
 
-questions = list(multiple_choice_questions + true_false_questions)
+ALL_QUESTIONS = {
+    "mk": list(multiple_choice_questions_mk + true_false_questions_mk),
+    "en": list(multiple_choice_questions_en + true_false_questions_en),
+}
+questions = ALL_QUESTIONS[language]
 quiz_bg_image = load_assets()
+
+
+def text(key):
+    return TEXT[language][key]
 
 
 def network_send(payload):
@@ -78,6 +90,7 @@ def run_listener():
             t = msg.get("type")
             if t == "lobby_created":
                 lobby_code = msg["code"]
+                print(lobby_code)
                 my_player_id = msg["player_id"]
                 is_host = True
             elif t == "lobby_joined":
@@ -154,9 +167,11 @@ def reset_local_game_data():
 
 
 def main():
-    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions, trigger_roll
+    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions, trigger_roll, language
     connect()
-    state = "MENU"
+    # state = "MENU"
+    state = "LANG_SELECT"
+    # language = "mk"
     color_choices = [
         (PURPLE, "purple"),
         (GREEN, "green"),
@@ -181,45 +196,51 @@ def main():
         screen.fill(BLACK)
 
         if state == "MENU":
-            draw_text(screen, "LUDO", WIDTH // 2, HEIGHT // 2 - 120, 48, color=WHITE)
-            btn_create = draw_button("Креирај ново лоби", WIDTH // 2 - 120, HEIGHT // 2 - 40, 240, 50,
+            draw_text(screen, text("title"), WIDTH // 2, HEIGHT // 2 - 120, 48, color=WHITE)
+            btn_create = draw_button(text("create_lobby"), WIDTH // 2 - 120, HEIGHT // 2 - 40, 240, 50,
                                      BLUE, LIGHT_BLUE, mouse_pos)
-            btn_join = draw_button("Влези во лоби", WIDTH // 2 - 120, HEIGHT // 2 + 30, 240, 50,
+            btn_join = draw_button(text("join_lobby"), WIDTH // 2 - 120, HEIGHT // 2 + 30, 240, 50,
                                    GREEN, LIGHT_GREEN, mouse_pos)
 
             if server_error_msg:
                 draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 110, 28, color=RED)
 
 
+        elif state == "LANG_SELECT":
+            draw_text(screen, text("lang_title"), WIDTH // 2, HEIGHT // 2 - 80, 40, WHITE)
+
+            btn_mk = draw_button(text("lang_mk"), WIDTH // 2 - 120, HEIGHT // 2, 240, 50, BLUE, LIGHT_YELLOW, mouse_pos)
+            btn_en = draw_button(text("lang_en"), WIDTH // 2 - 120, HEIGHT // 2 + 70, 240, 50, GREEN, LIGHT_GREEN, mouse_pos)
+
         elif state == "CREATE":
             server_error_msg = None
-            draw_text(screen, "Избери број на играчи", WIDTH // 2, HEIGHT // 2 - 80, 36, WHITE)
-            btn_2 = draw_button("2 играчи", WIDTH // 2 - 180, HEIGHT // 2 - 20, 100, 50,
+            draw_text(screen, text("choose_num_players"), WIDTH // 2, HEIGHT // 2 - 80, 36, WHITE)
+            btn_2 = draw_button(text("2"), WIDTH // 2 - 180, HEIGHT // 2 - 20, 100, 50,
                                 (100, 100, 100), (150, 150, 150), mouse_pos)
-            btn_3 = draw_button("3 играчи", WIDTH // 2 - 60, HEIGHT // 2 - 20, 100, 50,
+            btn_3 = draw_button(text("3"), WIDTH // 2 - 60, HEIGHT // 2 - 20, 100, 50,
                                 (100, 100, 100), (150, 150, 150), mouse_pos)
-            btn_4 = draw_button("4 играчи", WIDTH // 2 + 60, HEIGHT // 2 - 20, 100, 50,
+            btn_4 = draw_button(text("4"), WIDTH // 2 + 60, HEIGHT // 2 - 20, 100, 50,
                                 (100, 100, 100), (150, 150, 150), mouse_pos)
 
         elif state == "JOIN":
             server_error_msg = None
-            draw_text(screen, "Внеси код на лоби:", WIDTH // 2, HEIGHT // 2 - 60, 36, WHITE)
+            draw_text(screen, text("lobbi_code"), WIDTH // 2, HEIGHT // 2 - 60, 36, WHITE)
             draw_text(screen, temp_name.upper() + "|", WIDTH // 2, HEIGHT // 2, 42, BLUE)
-            draw_text(screen, "Кликни ЕNTER да влезеш", WIDTH // 2, HEIGHT // 2 + 60, 24, BLUE)
+            draw_text(screen, text("press_enter"), WIDTH // 2, HEIGHT // 2 + 60, 24, BLUE)
 
         elif state == "ENTER_NAME":
-            draw_text(screen, "Напиши име:", WIDTH // 2, HEIGHT // 2 - 60, 36, BLUE)
+            draw_text(screen, text("enter_name"), WIDTH // 2, HEIGHT // 2 - 60, 36, BLUE)
             draw_text(screen, temp_name + "|", WIDTH // 2, HEIGHT // 2, 42, BLUE)
 
             if server_error_msg:
                 draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 100, 24, RED)
 
-            draw_text(screen, "Кликни ЕNTER да продолжиш", WIDTH // 2, HEIGHT // 2 + 60, 24, WHITE)
+            draw_text(screen, text("press_enter"), WIDTH // 2, HEIGHT // 2 + 60, 24, WHITE)
 
         elif state == "CHOOSE_COLOR":
             server_error_msg = ""
-            draw_text(screen, "Избери боја:", WIDTH // 2, HEIGHT // 2 - 80, 36, WHITE)
-            draw_text(screen, "Кликни на боја", WIDTH // 2, HEIGHT // 2 - 40, 24, WHITE)
+            draw_text(screen, text("choose_color"), WIDTH // 2, HEIGHT // 2 - 80, 36, WHITE)
+            draw_text(screen, text("click_on_color"), WIDTH // 2, HEIGHT // 2 - 40, 24, WHITE)
 
             taken_colors = []
 
@@ -232,25 +253,25 @@ def main():
             color_boxes = draw_color_choice_boxes(available_colors)
 
         elif state == "LOBBY":
-            draw_text(screen, f"Кодот за лоби {lobby_code}", WIDTH // 2, HEIGHT // 2 - 120, 42, WHITE)
-            draw_text(screen, "Чекаме други играчи...", WIDTH // 2, HEIGHT // 2 - 60, 28, (100, 100, 100), BLUE)
+            draw_text(screen, f"{text("codi")} {lobby_code}", WIDTH // 2, HEIGHT // 2 - 120, 42, WHITE)
+            draw_text(screen, text("waiting_players"), WIDTH // 2, HEIGHT // 2 - 60, 28, (100, 100, 100), BLUE)
 
             if is_host and game_state and len([p for p in game_state["players"].values() if p.get("name")]) >= 2:
-                btn_start = draw_button("ПОЧНИ", WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50,
+                btn_start = draw_button(text("start"), WIDTH // 2 - 100, HEIGHT // 2 + 120, 200, 50,
                                         GREEN, LIGHT_GREEN, mouse_pos)
 
-            btn_menu = draw_button("ИЗЛЕЗ", WIDTH - 150, HEIGHT - 100, 120, 50,
+            btn_menu = draw_button(text("exit"), WIDTH - 150, HEIGHT - 100, 120, 50,
                                    BLUE, LIGHT_BLUE, mouse_pos)
             if game_state:
                 y = HEIGHT // 2
                 for p_uuid, p_data in game_state["players"].items():
-                    name = p_data["name"] if p_data["name"] else "Чекаме..."
+                    name = p_data["name"] if p_data["name"] else text("wait")
 
                     if p_data.get("color"):
                         color_rgb = COLOR_ENUM.get(p_data["color"].lower(), (128, 128, 128))
                         pygame.draw.circle(screen, color_rgb, (WIDTH // 2 - 150, y + 5), 15)
 
-                    display_name = f"{name} (ТИ)" if p_uuid == my_player_id else name
+                    display_name = f"{name} {text("you")}" if p_uuid == my_player_id else name
                     draw_text(screen, display_name, WIDTH // 2, y, 26, WHITE)
                     y += 40
 
@@ -274,7 +295,8 @@ def main():
                     draw_versus_screen(
                         p1_data["name"], p2_data["name"],
                         COLOR_ENUM[p1_data["color"].lower()],
-                        COLOR_ENUM[p2_data["color"].lower()]
+                        COLOR_ENUM[p2_data["color"].lower()],
+                        language
                     )
 
                     if not duel_intro_seen:
@@ -286,15 +308,15 @@ def main():
                     duel_intro_seen = False
 
                     if my_player_id in [duel["p1"], duel["p2"]]:
-                        res = draw_duel_overlay(duel, my_player_id)
+                        res = draw_duel_overlay(duel, my_player_id, language)
                         if res is not None:
                             network_send({"type": "duel_answer", "player": my_player_id, "correct": res})
                             pygame.event.clear()
                     else:
                         screen.fill(BLACK)
-                        draw_text(screen, f"ДУЕЛ: {p1_data['name']} vs {p2_data['name']}",
+                        draw_text(screen, f"{text("duel")}: {p1_data['name']} vs {p2_data['name']}",
                                   WIDTH // 2, HEIGHT // 2 - 20, 40, RED)
-                        draw_text(screen, "Ве молиме почекајте другите играчи да завршат",
+                        draw_text(screen, text("wait_for_other"),
                                   WIDTH // 2, HEIGHT // 2 + 40, 28, RED)
 
                 pygame.display.flip()
@@ -324,8 +346,8 @@ def main():
             curr.pawns = curr_data["pawns"]
             curr.finished = curr_data["finished"]
 
-            bx, by, quiz_rect, home_pawns = draw_board(players_list, curr_color)
-            btn_menu = draw_button("ИЗЛЕЗ", WIDTH - 150, HEIGHT - 100, 120, 50,
+            bx, by, quiz_rect, home_pawns = draw_board(players_list, curr_color, language)
+            btn_menu = draw_button(text("exit"), WIDTH - 150, HEIGHT - 100, 120, 50,
                                    BLUE, LIGHT_BLUE, mouse_pos)
 
             active_rects = {}
@@ -367,8 +389,8 @@ def main():
                 winner_data["name"],
                 COLOR_ENUM[winner_data["color"].lower()]
             )
-            draw_win_screen(winner)
-            draw_text(screen, "Притисни ESC за излез", WIDTH // 2, HEIGHT // 2 + 80, 28, WHITE)
+            draw_win_screen(winner, language)
+            draw_text(screen, text("press_esc"), WIDTH // 2, HEIGHT // 2 + 80, 28, WHITE)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -381,6 +403,16 @@ def main():
                 elif btn_join.collidepoint(event.pos):
                     state = "JOIN"
                     temp_name = ""
+
+            elif state == "LANG_SELECT" and event.type == pygame.MOUSEBUTTONDOWN:
+                if btn_mk.collidepoint(event.pos):
+                    language = "mk"
+                    questions = ALL_QUESTIONS[language]
+                    state = "MENU"
+                elif btn_en.collidepoint(event.pos):
+                    language = "en"
+                    questions = ALL_QUESTIONS[language]
+                    state = "MENU"
 
             elif state == "CREATE" and event.type == pygame.MOUSEBUTTONDOWN:
                 max_players = None
@@ -418,7 +450,12 @@ def main():
                 for rect, color_const, color_name in color_boxes:
                     if rect.collidepoint(event.pos):
                         player_color = color_name
-                        network_send({"type": "register", "name": player_name, "color": color_name})
+                        network_send({
+                            "type": "register",
+                            "name": player_name,
+                            "color": player_color,
+                            "language": language
+                        })
                         state = "LOBBY"
                         break
 
@@ -448,10 +485,10 @@ def main():
                             waiting_for_pawn_selection = False
 
                             selectable = active_rects.get(curr_p.name, [])
-                            chosen_idx = choose_pawn(selectable)
+                            chosen_idx = choose_pawn(selectable, language)
 
                             if chosen_idx is not None:
-                                draw_quiz_intro_overlay(quiz_bg_image)
+                                draw_quiz_intro_overlay(quiz_bg_image, language)
 
                                 quiz_moves = 0
                                 waiting_for_input = True
@@ -468,8 +505,8 @@ def main():
                                     clock.tick(FPS)
 
                                 if len(questions) < 1:
-                                    questions = list(multiple_choice_questions + true_false_questions)
-                                result = draw_quiz(questions)
+                                    questions = ALL_QUESTIONS[language]
+                                result = draw_quiz(questions, language)
                                 final_move = quiz_moves if result else -quiz_moves
 
                                 send_move(chosen_idx, final_move, move_type="quiz")
@@ -477,7 +514,7 @@ def main():
                                 waiting_for_pawn_selection = False
 
                         else:
-                            draw_text_with_box_around(screen, "Прво мораш да имаш пионче на таблата!",
+                            draw_text_with_box_around(screen, text("warning"),
                                                       WIDTH // 2, HEIGHT // 2, text_size=26, text_color=WHITE,
                                                       box_color=BLUE)
                             pygame.display.flip()

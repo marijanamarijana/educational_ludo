@@ -42,7 +42,7 @@ board_x = (w - board_size) // 2
 board_y = (h - board_size) // 2
 
 
-def draw_board(players, color):
+def draw_board(players, color, language):
     global w, h, cell, board_x, board_y
 
     screen.fill(BLACK)
@@ -62,17 +62,21 @@ def draw_board(players, color):
     draw_secondary_colors(screen, board_x, board_y)
     draw_win_paths(screen, board_x, board_y)
     draw_center_triangles(screen, board_x, board_y)
-    quiz_rect = draw_quiz_rect(color)
+    quiz_rect = draw_quiz_rect(color, language)
 
     return board_x, board_y, quiz_rect, pawns
 
 
-def draw_quiz_rect(color):
+def text(key, language):
+    return TEXT[language][key]
+
+
+def draw_quiz_rect(color, language):
     quiz_border = pygame.Rect(board_x + 7.8 * cell, board_y - 2.3 * cell, 2.5 * cell, 2 * cell)
     quiz_rect = pygame.Rect(board_x + 7.8 * cell + 2, board_y - 2.3 * cell + 2, 2.5 * cell - 4, 2 * cell - 4)
     pygame.draw.rect(screen, DUEL_CYAN, quiz_border, border_radius=5)
     pygame.draw.rect(screen, BLACK, quiz_rect, border_radius=3)
-    draw_text(screen, "КВИЗ", quiz_rect.centerx, quiz_rect.centery, color=color)
+    draw_text(screen, text("quiz", language), quiz_rect.centerx, quiz_rect.centery, color=color)
 
     return quiz_rect
 
@@ -378,7 +382,7 @@ def draw_button(text, x, y, w, h, color, hover_color, mouse_pos, quiz_btn=False)
     return rect
 
 
-def draw_versus_screen(p1_name, p2_name, p1_color, p2_color):
+def draw_versus_screen(p1_name, p2_name, p1_color, p2_color, language):
     screen.fill(BLACK)
 
     pygame.draw.rect(screen, p1_color, (0, 0, WIDTH // 2, HEIGHT))
@@ -390,17 +394,17 @@ def draw_versus_screen(p1_name, p2_name, p1_color, p2_color):
     pygame.draw.circle(screen, WHITE, (WIDTH // 2, HEIGHT // 2), 60)
     draw_text(screen, "VS", WIDTH // 2, HEIGHT // 2 - 20, 60, BLACK)
 
-    draw_text(screen, "ПОДГОТВЕТЕ СЕ ЗА КВИЗ!", WIDTH // 2, HEIGHT - 100, 30, WHITE)
+    draw_text(screen, text("duel_get_ready", language), WIDTH // 2, HEIGHT - 100, 30, WHITE)
     pygame.display.flip()
 
 
-def draw_win_screen(winner):
+def draw_win_screen(winner, language):
     screen.fill(BLACK)
-    draw_text(screen, f"{winner.name.upper()} ПОБЕДИ!", WIDTH // 2 - 120, HEIGHT // 2 - 40, 64, winner.color)
-    draw_text(screen, "Притисни ESC за излез", WIDTH // 2 - 110, HEIGHT // 2 + 40, 32)
+    draw_text(screen, f"{winner.name.upper()} {text("win", language)}", WIDTH // 2 - 120, HEIGHT // 2 - 40, 64, winner.color)
+    draw_text(screen, text("press_esc", language), WIDTH // 2 - 110, HEIGHT // 2 + 40, 32)
 
 
-def draw_quiz_intro_overlay(quiz_bg):
+def draw_quiz_intro_overlay(quiz_bg, language):
     screen.blit(quiz_bg, (0, 0))
 
     win_w, win_h = 700, 500
@@ -411,18 +415,18 @@ def draw_quiz_intro_overlay(quiz_bg):
 
     header_rect = pygame.Rect(win_rect.x, win_rect.y, win_w, 35)
     pygame.draw.rect(screen, DUEL_CYAN, header_rect, border_top_left_radius=15, border_top_right_radius=15)
-    draw_text(screen, "ИЗВЕСТУВАЊЕ", win_rect.centerx, win_rect.y + 18, 20, BLACK)
+    draw_text(screen, text("h_up", language), win_rect.centerx, win_rect.y + 18, 20, BLACK)
 
-    draw_text(screen, "Избравте да решавате квиз!", win_rect.centerx, win_rect.y + 80, 28, WHITE)
-    draw_text(screen, "> Внеси број на чекори (1-6):", win_rect.centerx, win_rect.y + 140, 24, DUEL_CYAN)
-    draw_text(screen, "ДВИЖЕЊЕ ПРИ ОДГОВОР:", win_rect.centerx, win_rect.y + 200, 18, (150, 150, 150))
-    draw_text(screen, "[ ТОЧНО ] -> НАПРЕДОК", win_rect.centerx, win_rect.y + 240, 22, GREEN)
-    draw_text(screen, "[ ПОГРЕШНО ] -> ПОВЛЕКУВАЊЕ", win_rect.centerx, win_rect.y + 280, 22, RED)
+    draw_text(screen, text("choose_quiz", language), win_rect.centerx, win_rect.y + 80, 28, WHITE)
+    draw_text(screen, text("num_steps", language), win_rect.centerx, win_rect.y + 140, 24, DUEL_CYAN)
+    draw_text(screen, text("movement", language), win_rect.centerx, win_rect.y + 200, 18, (150, 150, 150))
+    draw_text(screen, text("correct", language), win_rect.centerx, win_rect.y + 240, 22, GREEN)
+    draw_text(screen, text("wrong", language), win_rect.centerx, win_rect.y + 280, 22, RED)
 
     pygame.display.flip()
 
 
-def draw_quiz(questions):
+def draw_quiz(questions, language):
     tmp = questions.pop(random.randint(0, len(questions) - 1))
     question = tmp["question"]
     options = tmp["options"]
@@ -440,7 +444,7 @@ def draw_quiz(questions):
 
     header_rect = pygame.Rect(win_rect.x, win_rect.y, win_w, 40)
     pygame.draw.rect(screen, DUEL_CYAN, header_rect, border_top_left_radius=15, border_top_right_radius=15)
-    draw_text(screen, "--- ОДГОВОРИ НА ДАДЕНОТО СЦЕНАРИО ---", win_rect.centerx, win_rect.y + 20, 22, BLACK)
+    draw_text(screen, text("scenario", language), win_rect.centerx, win_rect.y + 20, 22, BLACK)
 
     y_offset = win_rect.y + 80
     if len(question) <= 50:
@@ -512,11 +516,11 @@ def draw_quiz(questions):
     is_correct = (selected == answer)
 
     if timed_out:
-        feedback_text = "ВРЕМЕТО ИСТЕЧЕ!"
+        feedback_text = text("times_upp", language)
         feedback_color = RED
     else:
         feedback_color = DUEL_LIME if is_correct else RED
-        feedback_text = "ТОЧНО" if is_correct else "ПОГРЕШНО"
+        feedback_text = text("yes", language) if is_correct else text("no", language)
 
     flash_rect = win_rect.inflate(-20, -20)
     pygame.draw.rect(screen, feedback_color, flash_rect, 5, border_radius=10)
@@ -527,22 +531,22 @@ def draw_quiz(questions):
     return is_correct
 
 
-def draw_duel_overlay(duel_info, my_player_id):
+def draw_duel_overlay(duel_info, my_player_id, language):
     q_idx = duel_info["q_index"]
     question_data = duel_info["questions"][q_idx]
 
     my_answers = duel_info["p1_answers"] if my_player_id == duel_info["p1"] else duel_info["p2_answers"]
     if str(q_idx) in my_answers:
         screen.fill(BLACK)
-        draw_text(screen, f"Чекање на противникот... ({q_idx + 1}/5)", WIDTH // 2, HEIGHT // 2, 30, RED)
+        draw_text(screen, f"{text("wait_for_enemy", language)} ({q_idx + 1}/5)", WIDTH // 2, HEIGHT // 2, 30, RED)
         pygame.display.flip()
         return None
 
     return draw_quiz([question_data])
 
 
-def choose_pawn(pawns):
-    draw_text(screen, "Избери пионче!", 20, HEIGHT - 50, 20, center=False, color=RED)
+def choose_pawn(pawns, language):
+    draw_text(screen, text("chose_pawn", language), 20, HEIGHT - 50, 20, center=False, color=RED)
     pygame.display.flip()
     selected_pawn = False
     while not selected_pawn:
