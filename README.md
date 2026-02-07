@@ -4,7 +4,7 @@
 
 **Educational Ludo** is a multiplayer board game for kids or adults that combines the classic Ludo gameplay with fun educational questions.  
 Players compete to reach the finish first while answering quiz questions that test their knowledge and add an extra challenge to every move.
-Play with up to 4 friends per game! 
+Play with up to 4 friends per game, whether you choose the macedonian or english version it's all up to you! 
 
 The game is designed for:
 - Playing with friends 
@@ -19,7 +19,7 @@ What separates it from a classic Ludo is:
 
 The game can also be downloaded and played with friends as a standalone **.exe** file.
 
-You can preview the user interface and gameplay inside the demo folder [here](https://github.com/marijanamarijana/educational_ludo/tree/main/demo).
+**You can preview the user interface and gameplay inside the demo folder [here](https://github.com/marijanamarijana/educational_ludo/tree/main/demo).**
 
 ---
 
