@@ -507,6 +507,7 @@ def main():
                         network_send({"type": "duel_ready", "player": my_player_id})
                         print("ready sent")
                         player_is_ready = True
+                        pygame.time.delay(150)
                         continue
 
                 if is_my_turn():

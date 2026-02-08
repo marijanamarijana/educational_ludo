@@ -323,8 +323,7 @@ def handle_client(conn, addr):
 
                     if len(duel["p1_answers"]) >= 5 and len(duel["p2_answers"]) >= 5:
                         lobby.resolve_duel()
-
-                    lobby.broadcast()
+                        lobby.broadcast()
 
             elif t == "exit":
                 player_id = msg.get("player")
