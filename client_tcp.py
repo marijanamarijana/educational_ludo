@@ -306,10 +306,12 @@ def main():
                         language
                     )
 
+                    duel_answers = []
+
                     if not player_is_ready and my_player_id in (duel["p1"], duel["p2"]):
                         btn_ready = draw_button(text("start"), WIDTH // 2 - 100, HEIGHT - 300, 200, 50,
                                                 GREEN, LIGHT_GREEN, mouse_pos)
-                    else:
+                    elif my_player_id in (duel["p1"], duel["p2"]):
                         draw_text(screen, text("waiting_for_opp"), WIDTH // 2, HEIGHT - 60, 28, RED)
                         current_time = time.time()
                         if current_time - last_sync_request_time > 3.0:
@@ -505,6 +507,7 @@ def main():
                         network_send({"type": "duel_ready", "player": my_player_id})
                         print("ready sent")
                         player_is_ready = True
+                        pygame.time.delay(150)
                         continue
 
                 if is_my_turn():
