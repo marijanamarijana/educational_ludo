@@ -532,17 +532,14 @@ def draw_quiz(questions, language):
     return is_correct
 
 
-def draw_duel_overlay(duel_info, my_player_id, language):
-    q_idx = duel_info["q_index"]
-    question_data = duel_info["questions"][my_player_id][q_idx]
-
-    my_answers = duel_info["p1_answers"] if my_player_id == duel_info["p1"] else duel_info["p2_answers"]
-    if str(q_idx) in my_answers:
+def draw_duel_overlay(duel_info, current_local_idx, my_player_id, language):
+    if current_local_idx >= 5:
         screen.fill(BLACK)
         text_wait = text("wait_for_enemy", language)
-        draw_text(screen, f"{text_wait} ({q_idx + 1}/5)", WIDTH // 2, HEIGHT // 2, 30, RED)
-        pygame.display.flip()
+        draw_text(screen, f"{text_wait} (5/5)", WIDTH // 2, HEIGHT // 2, 30, RED)
         return None
+
+    question_data = duel_info["questions"][my_player_id][current_local_idx]
 
     return draw_quiz([question_data], language)
 

@@ -33,9 +33,12 @@ server_error_msg = ""
 rolled_dice = None
 trigger_roll = False
 temp_name = ""
+player_is_ready = False
+last_sync_request_time = 0
+duel_answers = []
 
-HOST = "127.0.0.1"  # for local
-# HOST = "84.8.255.17" # for cloud
+# HOST = "127.0.0.1"  # for local
+HOST = "84.8.255.17"  # for cloud
 PORT = 62743
 
 COLOR_ENUM = {
@@ -62,7 +65,7 @@ def network_send(payload):
     if server_socket:
         try:
             data = json.dumps(payload).encode("utf-8")
-            header = len(data).to_bytes(4, 'big')
+            header = len(data).to_bytes(256, 'big')
             server_socket.sendall(header + data)
         except Exception as e:
             print(f"[CLIENT] Send error: {e}")
@@ -79,10 +82,10 @@ def send_move(pawn_index, dice_value, move_type="dice"):
 
 
 def run_listener():
-    global game_state, my_player_id, lobby_code, is_host, kill, state, server_error_msg, rolled_dice, trigger_roll
+    global game_state, my_player_id, lobby_code, is_host, kill, state, server_error_msg, rolled_dice, trigger_roll, player_is_ready, last_sync_request_time
     while not kill:
         try:
-            header = server_socket.recv(4)
+            header = server_socket.recv(256)
             if not header:
                 break
             size = int.from_bytes(header, "big")
@@ -90,7 +93,6 @@ def run_listener():
             t = msg.get("type")
             if t == "lobby_created":
                 lobby_code = msg["code"]
-                print(lobby_code)
                 my_player_id = msg["player_id"]
                 is_host = True
             elif t == "lobby_joined":
@@ -99,6 +101,9 @@ def run_listener():
                 state = "ENTER_NAME"
             elif t == "game_state":
                 game_state = msg["game_state"]
+                duel = game_state.get("duel", {})
+                if duel and duel.get("phase") != "INTRO":
+                    player_is_ready = False
             elif t == "dice_state":
                 rolled_dice = msg["value"]
                 trigger_roll = True if rolled_dice else False
@@ -115,6 +120,7 @@ def run_listener():
 def connect():
     global server_socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     server_socket.connect((HOST, PORT))
     threading.Thread(target=run_listener, daemon=True).start()
 
@@ -167,7 +173,8 @@ def reset_local_game_data():
 
 
 def main():
-    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions, trigger_roll, language
+    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions, trigger_roll, language, player_is_ready, last_sync_request_time, duel_answers
+
     connect()
     state = "LANG_SELECT"
     color_choices = [
@@ -184,7 +191,6 @@ def main():
     waiting_for_pawn = False
     active_rects = {}
     home_pawns = {}
-    duel_intro_seen = False
     winner_id = None
 
     running = True
@@ -208,7 +214,8 @@ def main():
             draw_text(screen, text("lang_title"), WIDTH // 2, HEIGHT // 2 - 80, 40, WHITE)
 
             btn_mk = draw_button(text("lang_mk"), WIDTH // 2 - 120, HEIGHT // 2, 240, 50, BLUE, LIGHT_YELLOW, mouse_pos)
-            btn_en = draw_button(text("lang_en"), WIDTH // 2 - 120, HEIGHT // 2 + 70, 240, 50, GREEN, LIGHT_GREEN, mouse_pos)
+            btn_en = draw_button(text("lang_en"), WIDTH // 2 - 120, HEIGHT // 2 + 70, 240, 50, GREEN, LIGHT_GREEN,
+                                 mouse_pos)
 
         elif state == "CREATE":
             server_error_msg = None
@@ -299,19 +306,33 @@ def main():
                         language
                     )
 
-                    if not duel_intro_seen:
-                        pygame.time.delay(1000)
-                        network_send({"type": "duel_ready", "player": my_player_id})
-                        duel_intro_seen = True
-
+                    if not player_is_ready:
+                        btn_ready = draw_button(text("start"), WIDTH // 2 - 100, HEIGHT - 300, 200, 50,
+                                                GREEN, LIGHT_GREEN, mouse_pos)
+                    else:
+                        draw_text(screen, text("waiting_for_opp"), WIDTH // 2, HEIGHT - 60, 28, RED)
+                        current_time = time.time()
+                        if current_time - last_sync_request_time > 3.0:
+                            print("Still in INTRO. Requesting sync...")
+                            network_send({"type": "request_sync"})
+                            last_sync_request_time = current_time
                 else:
-                    duel_intro_seen = False
-
                     if my_player_id in [duel["p1"], duel["p2"]]:
-                        res = draw_duel_overlay(duel, my_player_id, language)
+                        current_local_idx = len(duel_answers)
+
+                        res = draw_duel_overlay(duel, current_local_idx, my_player_id, language)
+
                         if res is not None:
-                            network_send({"type": "duel_answer", "player": my_player_id, "correct": res})
-                            pygame.event.clear()
+                            duel_answers.append(res)
+
+                        if len(duel_answers) == 5:
+                            print("Sending all answers to server...")
+                            network_send({
+                                "type": "duel_answer",
+                                "player": my_player_id,
+                                "answers": duel_answers
+                            })
+                            duel_answers = [None] * 6
                     else:
                         screen.fill(BLACK)
                         duel_text = text("duel")
@@ -321,69 +342,68 @@ def main():
                                   WIDTH // 2, HEIGHT // 2 + 40, 28, RED)
 
                 pygame.display.flip()
-                continue
 
-            players = {}
-            players_list = []
-            for player_id, pdata in game_state["players"].items():
-                if pdata["name"] and pdata["color"]:
-                    color_const = COLOR_ENUM.get(pdata["color"].lower(), PURPLE)
-                    new_player = Player(pdata["name"], color_const)
-                    new_player.pawns = pdata["pawns"]
-                    new_player.finished = pdata["finished"]
-                    players[player_id] = new_player
-                    players_list.append(new_player)
+            else:
+                players = {}
+                players_list = []
+                for player_id, pdata in game_state["players"].items():
+                    if pdata["name"] and pdata["color"]:
+                        color_const = COLOR_ENUM.get(pdata["color"].lower(), PURPLE)
+                        new_player = Player(pdata["name"], color_const)
+                        new_player.pawns = pdata["pawns"]
+                        new_player.finished = pdata["finished"]
+                        players[player_id] = new_player
+                        players_list.append(new_player)
 
-            if not players:
-                continue
+                if not players:
+                    continue
 
-            turn_id = game_state.get("turn_id")
-            if turn_id is None or turn_id not in game_state["players"]:
-                continue
-            curr_data = game_state["players"][turn_id]
+                turn_id = game_state.get("turn_id")
+                if turn_id is None or turn_id not in game_state["players"]:
+                    continue
+                curr_data = game_state["players"][turn_id]
 
-            curr_color = COLOR_ENUM.get(curr_data["color"].lower(), PURPLE)
-            curr = Player(curr_data["name"], curr_color)
-            curr.pawns = curr_data["pawns"]
-            curr.finished = curr_data["finished"]
+                curr_color = COLOR_ENUM.get(curr_data["color"].lower(), PURPLE)
+                curr = Player(curr_data["name"], curr_color)
+                curr.pawns = curr_data["pawns"]
+                curr.finished = curr_data["finished"]
 
-            bx, by, quiz_rect, home_pawns = draw_board(players_list, curr_color, language)
-            btn_menu = draw_button(text("exit"), WIDTH - 150, HEIGHT - 100, 120, 50,
-                                   BLUE, LIGHT_BLUE, mouse_pos)
+                bx, by, quiz_rect, home_pawns = draw_board(players_list, curr_color, language)
+                btn_menu = draw_button(text("exit"), WIDTH - 150, HEIGHT - 100, 120, 50,
+                                       BLUE, LIGHT_BLUE, mouse_pos)
 
-            active_rects = {}
-            for p in players_list:
-                active_rects[p.name] = p.draw(screen, bx, by)
+                active_rects = {}
+                for p in players_list:
+                    active_rects[p.name] = p.draw(screen, bx, by)
 
-            opp_id, my_p_idx, opp_p_idx = client_check_duel(players, active_rects)
+                opp_id, my_p_idx, opp_p_idx = client_check_duel(players, active_rects)
 
-            if not game_state["moving"]:
-                if opp_id is not None:
-                    network_send({
-                        "type": "initiate_duel",
-                        "p1": my_player_id,
-                        "p2": opp_id,
-                        "p1_pawn": my_p_idx,
-                        "p2_pawn": opp_p_idx
-                    })
+                if not game_state["moving"]:
+                    if opp_id is not None:
+                        network_send({
+                            "type": "initiate_duel",
+                            "p1": my_player_id,
+                            "p2": opp_id,
+                            "p1_pawn": my_p_idx,
+                            "p2_pawn": opp_p_idx
+                        })
 
-            if not is_my_turn():
-                if trigger_roll:
-                    print(f"triggered roll: {curr.color}, {rolled_dice}")
-                    roll_dice(screen, curr.color, rolled_dice)
-                    trigger_roll = False
-                    pygame.time.delay(200)
+                if not is_my_turn():
+                    if trigger_roll:
+                        roll_dice(screen, curr.color, rolled_dice)
+                        trigger_roll = False
+                        pygame.time.delay(200)
+                    else:
+                        dice_rect = draw_dice(screen, curr_color, rolled_dice if rolled_dice else 1)
                 else:
                     dice_rect = draw_dice(screen, curr_color, rolled_dice if rolled_dice else 1)
-            else:
-                dice_rect = draw_dice(screen, curr_color, rolled_dice if rolled_dice else 1)
 
-            draw_text(screen, f"CODE: {lobby_code}", 20, 30, 20, WHITE, center=False)
+                draw_text(screen, f"CODE: {lobby_code}", 20, 30, 20, WHITE, center=False)
 
-            name_y = 60
-            for player in players_list:
-                draw_text(screen, player.name, 20, name_y, 20, player.color, center=False)
-                name_y += 30
+                name_y = 60
+                for player in players_list:
+                    draw_text(screen, player.name, 20, name_y, 20, player.color, center=False)
+                    name_y += 30
 
         elif state == "WIN":
             winner_data = game_state["players"][winner_id]
@@ -472,10 +492,20 @@ def main():
                         network_send({"type": "start_game"})
 
             elif state == "PLAYING" and event.type == pygame.MOUSEBUTTONDOWN:
+                if duel.get("active") and duel.get("phase") == "QUIZ":
+                    continue
+
                 if btn_menu.collidepoint(event.pos):
                     state = "MENU"
                     network_send({"type": "exit", "player": my_player_id})
                     reset_local_game_data()
+
+                if duel.get("active") and duel.get("phase") == "INTRO":
+                    if 'btn_ready' in locals() and btn_ready.collidepoint(event.pos):
+                        network_send({"type": "duel_ready", "player": my_player_id})
+                        print("ready sent")
+                        player_is_ready = True
+                        continue
 
                 if is_my_turn():
                     if quiz_rect and quiz_rect.collidepoint(event.pos):

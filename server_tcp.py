@@ -8,12 +8,12 @@ import uuid
 from data import multiple_choice_questions_mk, true_false_questions_mk
 from data import multiple_choice_questions_en, true_false_questions_en
 
-# HOST = "0.0.0.0" # for cloud
-HOST = "127.0.0.1" # for local
+HOST = "0.0.0.0" # for cloud
+# HOST = "127.0.0.1" # for local
 PORT = 62743
 
 lobbies = {}
-lock = threading.Lock()
+lock = threading.RLock()
 LAST_INDEX = 57
 
 def generate_code():
@@ -34,13 +34,13 @@ class Lobby:
             "winner_id": None,
             "moving": False,
             "duel": {
+                "ready_players": set(),
                 "active": False,
                 "phase": "INTRO",
                 "p1": None,
                 "p2": None,
                 "trigger_pawn": None,
                 "target_pawn": None,
-                "q_index": 0,
                 "p1_answers": {},
                 "p2_answers": {},
                 "questions": {}
@@ -52,12 +52,17 @@ class Lobby:
         }
 
     def broadcast(self):
-        data = json.dumps({"type": "game_state", "game_state": self.game_state}).encode('utf-8')
-        for p in self.players:
-            try:
-                self.players[p]["conn"].sendall(len(data).to_bytes(4, 'big') + data)
-            except:
-                continue
+        with lock:
+            data = json.dumps(
+                {"type": "game_state", "game_state": self.game_state},
+                default=lambda x: list(x) if isinstance(x, set) else x
+            ).encode('utf-8')
+
+            for p in self.players:
+                try:
+                    self.players[p]["conn"].sendall(len(data).to_bytes(256, 'big') + data)
+                except:
+                    continue
 
     def resolve_duel(self):
         duel = self.game_state["duel"]
@@ -82,18 +87,19 @@ class Lobby:
         duel["active"] = False
         duel["p1_answers"] = {}
         duel["p2_answers"] = {}
-        duel["q_index"] = 0
         duel["p1"] = None
         duel["p2"] = None
         duel["phase"] = "INTRO"
         duel["questions"] = {}
         duel["target_pawn"] = None
         duel["trigger_pawn"] = None
+        duel["ready_players"] = set()
 
     def switch_duel_to_quiz(self):
-        if self.game_state["duel"]["active"]:
-            self.game_state["duel"]["phase"] = "QUIZ"
-            self.broadcast()
+        with lock:
+            if self.game_state["duel"]["active"]:
+                self.game_state["duel"]["phase"] = "QUIZ"
+                self.broadcast()
 
     def add_player(self, conn):
         p_uuid = str(uuid.uuid4())
@@ -141,7 +147,7 @@ def handle_client(conn, addr):
 
     try:
         while True:
-            header = conn.recv(4)
+            header = conn.recv(256)
             if not header: break
             size = int.from_bytes(header, "big")
             msg = json.loads(conn.recv(size).decode())
@@ -155,7 +161,7 @@ def handle_client(conn, addr):
                     player_id = lobby.add_player(conn)
                     lobby.game_state["turn_id"] = player_id
 
-                conn.sendall(len(json.dumps({"type": "lobby_created", "code": code, "player_id": player_id}).encode()).to_bytes(4, "big") +
+                conn.sendall(len(json.dumps({"type": "lobby_created", "code": code, "player_id": player_id}).encode()).to_bytes(256, "big") +
                              json.dumps({"type": "lobby_created", "code": code, "player_id": player_id}).encode())
 
             elif t == "join_lobby":
@@ -164,11 +170,11 @@ def handle_client(conn, addr):
                     lobby = lobbies.get(code)
                     if lobby is None or len(lobby.players) >= lobby.max_players:
                         err = {"type": "error", "message": "Лобито е полно или не постои"}
-                        conn.sendall(len(json.dumps(err).encode()).to_bytes(4, "big") + json.dumps(err).encode())
+                        conn.sendall(len(json.dumps(err).encode()).to_bytes(256, "big") + json.dumps(err).encode())
                         continue
                     player_id = lobby.add_player(conn)
                     lobby.broadcast()
-                conn.sendall(len(json.dumps({"type": "lobby_joined", "code": code, "player_id": player_id}).encode()).to_bytes(4, "big") +
+                conn.sendall(len(json.dumps({"type": "lobby_joined", "code": code, "player_id": player_id}).encode()).to_bytes(256, "big") +
                              json.dumps({"type": "lobby_joined", "code": code, "player_id": player_id}).encode())
 
             elif t == "register":
@@ -192,7 +198,7 @@ def handle_client(conn, addr):
                         if name_taken and color_taken: reason = "Името и бојата"
 
                         err = {"type": "error", "message": f"{reason} веќе постои!"}
-                        conn.sendall(len(json.dumps(err).encode()).to_bytes(4, "big") + json.dumps(err).encode())
+                        conn.sendall(len(json.dumps(err).encode()).to_bytes(256, "big") + json.dumps(err).encode())
                     else:
                         lobby.players[player_id]["name"] = new_name
                         lobby.players[player_id]["color"] = new_color
@@ -211,129 +217,117 @@ def handle_client(conn, addr):
                 data = json.dumps({"type": "dice_state", "value": msg.get("value")}).encode('utf-8')
                 for p in lobby.players:
                     try:
-                        lobby.players[p]["conn"].sendall(len(data).to_bytes(4, 'big') + data)
+                        lobby.players[p]["conn"].sendall(len(data).to_bytes(256, 'big') + data)
                     except:
                         continue
 
             elif t == "move":
-                if lobby and player_id == lobby.game_state["turn_id"]:
-                    p_idx, steps = msg.get("pawn", -1), msg.get("dice", 0)
+                with lock:
+                    if lobby and player_id == lobby.game_state["turn_id"]:
+                        p_idx, steps = msg.get("pawn", -1), msg.get("dice", 0)
 
-                    if p_idx == -1:
+                        if p_idx == -1:
+                            winner = lobby.check_winner()
+                            if winner:
+                                lobby.broadcast()
+                                continue
+                            lobby.pass_turn()
+                            lobby.broadcast()
+                            continue
+
+                        p_data = lobby.game_state["players"][player_id]["pawns"]
+                        if p_idx != -1:
+                            if p_data[p_idx] == -1 and steps == 6:
+                                p_data[p_idx] = 0
+                            elif p_data[p_idx] != -1:
+                                lobby.game_state["moving"] = True
+                                for i in range(abs(steps)):
+                                    p_data[p_idx] += 1 if steps>0 else -1
+
+                                    if p_data[p_idx] < 0:
+                                        p_data[p_idx] = 0
+
+                                    if p_data[p_idx] >= LAST_INDEX:
+                                        p_data[p_idx] = LAST_INDEX
+                                        lobby.game_state["players"][player_id]["finished"][p_idx] = True
+                                        lobby.broadcast()
+                                        continue
+
+                                    lobby.broadcast()
+                                    time.sleep(0.15)
+
                         winner = lobby.check_winner()
                         if winner:
                             lobby.broadcast()
                             continue
+
+                        lobby.game_state["moving"] = False
+                        data = json.dumps({"type": "dice_state", "value": None}).encode('utf-8')
+                        for p in lobby.players:
+                            try:
+                                lobby.players[p]["conn"].sendall(len(data).to_bytes(256, 'big') + data)
+                            except:
+                                continue
                         lobby.pass_turn()
                         lobby.broadcast()
-                        continue
-
-                    p_data = lobby.game_state["players"][player_id]["pawns"]
-                    if p_idx != -1:
-                        if p_data[p_idx] == -1 and steps == 6:
-                            p_data[p_idx] = 0
-                        elif p_data[p_idx] != -1:
-                            lobby.game_state["moving"] = True
-                            for i in range(abs(steps)):
-                                p_data[p_idx] += 1 if steps>0 else -1
-
-                                if p_data[p_idx] < 0:
-                                    p_data[p_idx] = 0
-
-                                if p_data[p_idx] >= LAST_INDEX:
-                                    p_data[p_idx] = LAST_INDEX
-                                    lobby.game_state["players"][player_id]["finished"][p_idx] = True
-                                    lobby.broadcast()
-                                    continue
-
-                                lobby.broadcast()
-                                time.sleep(0.15)
-
-                    winner = lobby.check_winner()
-                    if winner:
-                        lobby.broadcast()
-                        continue
-
-                    lobby.game_state["moving"] = False
-                    data = json.dumps({"type": "dice_state", "value": None}).encode('utf-8')
-                    for p in lobby.players:
-                        try:
-                            lobby.players[p]["conn"].sendall(len(data).to_bytes(4, 'big') + data)
-                        except:
-                            continue
-                    lobby.pass_turn()
-                    lobby.broadcast()
 
             elif t == "duel_ready":
-                if not hasattr(lobby, 'duel_ready_players'):
-                    lobby.duel_ready_players = set()
+                with lock:
+                    lobby.game_state["duel"]["ready_players"].add(msg.get("player"))
 
-                lobby.duel_ready_players.add(msg.get("player"))
+                    p1 = lobby.game_state["duel"]["p1"]
+                    p2 = lobby.game_state["duel"]["p2"]
 
-                p1 = lobby.game_state["duel"]["p1"]
-                p2 = lobby.game_state["duel"]["p2"]
-
-                if p1 in lobby.duel_ready_players and p2 in lobby.duel_ready_players:
-                    lobby.switch_duel_to_quiz()
-                    lobby.duel_ready_players.clear()
+                    if p1 in lobby.game_state["duel"]["ready_players"] and p2 in lobby.game_state["duel"]["ready_players"]:
+                        lobby.switch_duel_to_quiz()
 
             elif t == "initiate_duel":
-                duel = lobby.game_state["duel"]
-                lobby.game_state["turn_id"] = msg["p1"]
-                p1_lang = lobby.players[msg["p1"]]["language"]
-                p2_lang = lobby.players[msg["p2"]]["language"]
+                with lock:
+                    duel = lobby.game_state["duel"]
+                    lobby.game_state["turn_id"] = msg["p1"]
+                    p1_lang = lobby.players[msg["p1"]]["language"]
+                    p2_lang = lobby.players[msg["p2"]]["language"]
 
-                random_questions_indices = random.sample(range(len(lobby.questions_per_lang["mk"])), 5)
-                p1_questions = []
-                p2_questions = []
-                for i in range(5):
-                    p1_questions.append(lobby.questions_per_lang[p1_lang][random_questions_indices[i]])
-                    p2_questions.append(lobby.questions_per_lang[p2_lang][random_questions_indices[i]])
+                    random_questions_indices = random.sample(range(len(lobby.questions_per_lang["mk"])), 5)
+                    p1_questions = []
+                    p2_questions = []
+                    for i in range(5):
+                        p1_questions.append(lobby.questions_per_lang[p1_lang][random_questions_indices[i]])
+                        p2_questions.append(lobby.questions_per_lang[p2_lang][random_questions_indices[i]])
 
-                duel.update({
-                    "active": True,
-                    "phase": "INTRO",
-                    "p1": msg["p1"],
-                    "p2": msg["p2"],
-                    "trigger_pawn": msg["p1_pawn"],
-                    "target_pawn": msg["p2_pawn"],
-                    "q_index": 0,
-                    "p1_answers": {},
-                    "p2_answers": {},
-                    "questions": {
-                        msg["p1"]: p1_questions,
-                        msg["p2"]: p2_questions
-                    }
-                })
-                lobby.broadcast()
+                    duel.update({
+                        "active": True,
+                        "phase": "INTRO",
+                        "p1": msg["p1"],
+                        "p2": msg["p2"],
+                        "trigger_pawn": msg["p1_pawn"],
+                        "target_pawn": msg["p2_pawn"],
+                        "p1_answers": {},
+                        "p2_answers": {},
+                        "questions": {
+                            msg["p1"]: p1_questions,
+                            msg["p2"]: p2_questions
+                        }
+                    })
+                    lobby.broadcast()
 
             elif t == "duel_answer":
-                duel = lobby.game_state["duel"]
-                q_idx = duel["q_index"]
-                player_id = msg["player"]
+                with lock:
+                    duel = lobby.game_state["duel"]
+                    player_id = msg["player"]
+                    received_answers = msg.get("answers")
 
-                player_questions = duel["questions"][player_id]
-                question = player_questions[q_idx]
+                    answers_key = "p1_answers" if player_id == duel["p1"] else "p2_answers"
 
-                answers_key = "p1_answers" if player_id == duel["p1"] else "p2_answers"
+                    duel[answers_key] = {str(i): val for i, val in enumerate(received_answers)}
 
-                duel[answers_key][str(q_idx)] = msg["correct"]
-
-                all_answered = (
-                        str(q_idx) in duel["p1_answers"] and
-                        str(q_idx) in duel["p2_answers"]
-                )
-
-                if all_answered:
-                    if duel["q_index"] < len(player_questions) - 1:
-                        duel["q_index"] += 1
-                    else:
+                    if len(duel["p1_answers"]) >= 5 and len(duel["p2_answers"]) >= 5:
                         lobby.resolve_duel()
-                lobby.broadcast()
+
+                    lobby.broadcast()
 
             elif t == "exit":
                 player_id = msg.get("player")
-                print("player clicked menu")
                 with lock:
                     if player_id in lobby.players:
                         lobby.remove_player(player_id)
@@ -342,6 +336,11 @@ def handle_client(conn, addr):
                     if not lobby.players and lobby.code in lobbies:
                         del lobbies[lobby.code]
                         print("Lobby deleted, no players left.")
+
+            elif t == "request_sync":
+                with lock:
+                    if lobby:
+                        lobby.broadcast()
 
 
 
@@ -365,12 +364,14 @@ def handle_client(conn, addr):
 
 def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((HOST, PORT))
         s.listen()
         print(f"Server running at {HOST}:{PORT}")
         while True:
             conn, addr = s.accept()
+            conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
 
 
