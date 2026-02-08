@@ -21,9 +21,9 @@ MAIN_PATH = ([(x, 6) for x in range(1, 6)] + [(6, y) for y in range(5, 0, -1)]
 
 START_INDEX = {
     PURPLE: 0,
-    GREEN: 14,
-    YELLOW: 27,
-    BLUE: 40
+    GREEN: 13,
+    YELLOW: 26,
+    BLUE: 39
 }
 
 
