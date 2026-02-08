@@ -17,7 +17,7 @@ What separates it from a classic Ludo is:
 
 ---
 
-The game can also be downloaded and played with friends as a standalone **.exe** file.
+The game can also be downloaded and played with friends as a standalone **.exe** file (check the Releases - you can download it from there).
 
 **You can preview the user interface and gameplay inside the demo folder [here](https://github.com/marijanamarijana/educational_ludo/tree/main/demo).**
 
