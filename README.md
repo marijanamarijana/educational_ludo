@@ -31,6 +31,6 @@ To start the multiplayer ludo game *LOCALY* on your machine in console / termina
 
 ----
 
-To start the multiplayer ludo ON THE CLOUD (on a hosted server) on your machine in the client_tcp.py file uncomment the settings for 
+To start the multiplayer ludo *ON THE CLOUD* (on a hosted server) on your machine in the client_tcp.py file uncomment the settings for 
 the host and start it with the command **python client_tcp.py**. You can also start as many clients as u like here - starting the client is the same as it is localy and the server is already provided for you.
 
