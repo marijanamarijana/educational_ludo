@@ -8,8 +8,8 @@ import uuid
 from data import multiple_choice_questions_mk, true_false_questions_mk
 from data import multiple_choice_questions_en, true_false_questions_en
 
-HOST = "0.0.0.0" # for cloud
-# HOST = "127.0.0.1" # for local
+# HOST = "0.0.0.0" # for cloud
+HOST = "127.0.0.1" # for local
 PORT = 62743
 
 lobbies = {}
