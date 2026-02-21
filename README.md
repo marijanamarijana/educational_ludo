@@ -11,9 +11,22 @@ The game is designed for:
 - Learning through interactive multiple-choice and true/false questions
 - Enjoying a colorful and simple user interface built with Python and Pygame
 
+The gameplay follows classic Ludo rules:
+- Each player chooses one of the remaining colors
+- A pawn can be put on the board if the dice rolls a 6
+- After a pawn is on the board, you move it by rolling the dice for a random number of moves, or you choose a quiz and select the number of moves given that you answer the question correctly
+- If two pawns from different teams land on the same tile, one of them gets off the board following the duel described below
+- The goal is to take all of the pawns to their designated "home" space in the center of the board
+
 What separates it from a classic Ludo is:
 - While playing you can click on the QUIZ button that will prompt you to pick a number between 1-6 which will then (let's say u selected 4) if answering correctly move u up 4 tiles but if answering wrong your pawn will be moved 4 tiles backwards
 - If u and an opponent both are on a tile - a DUEL occurs, you and your opponent answer questions as fast and as correctly as you can. The person with the most correctly answered questions in the short amount of time WINS the duel and stays on the tile, the losing pawn returns to it's home base 
+
+---
+
+The implementation of this game was done using python and pygame for all game logic and game design, while the online multiplayer aspect of it follows the client-server architecture and is implemented using
+TCP with the standard python sockets. Each "match" represents a Lobby on the server that stores the necessary game state and handling player connections. Once all players disconnect from a Lobby, the server
+deletes it to free up space for new matches.
 
 ---
 
@@ -49,6 +62,13 @@ the host and start it with the command **python client_tcp.py**. You can also st
 - Учење преку интерактивни прашања со повеќекратен избор и точно/неточно
 - Уживање во шарен и едноставен кориснички интерфејс изработен со Python и Pygame
 
+Играта ги следи класичните Не лути се човече правила:
+- Секој играч избира една од преостанатите бои
+- Ако фрлената коцка слета на 6, може да извади пионче на таблата
+- Откако пиончето е извадено, може да се движи за случаен број полиња со фрлање на коцка или играчот може да избере да одговара на квиз и да се придвижи за посакуваниот број полиња ако одговори точно
+- Ако две пиончиња од различен тим се најдат на исто поле, едно од нив ќе биде тргнато од таблата после дуелот опишан подолу
+- Целта е сите пиончиња да бидат внесени во нивното означено „домашно“ поле во центарот на таблата
+
 Она што ја разликува од класичната Не лути се човече е:
 - Додека играте, можете да кликнете на копчето КВИЗ, по што ќе треба да изберете број од 1-6.
 Доколку (на пример) изберете 4 и одговорите точно, ќе се придвижите 4 полиња напред;
@@ -57,6 +77,12 @@ the host and start it with the command **python client_tcp.py**. You can also st
 Вие и противникот одговарате на прашања што е можно побрзо и поточно.
 Играчот со најмногу точно одговорени прашања во краткиот временски период е победник на дуелот и останува на полето,
 додека фигурата на поразениот се враќа во почетната база.
+
+---
+
+Имплементацијата на играта е направена со python и pygame за логиката и дизајнот на играта, додека делот со онлајн multiplayer ја следи клиент-сервер архитектурата и е имплементиран користејќи ги
+стандардните python сокети преку TCP. Секоја „партија“ Не лути се човече претставува Лоби на серверот кадешто се зачувани неопходните податоци за состојбата на играта и се справува со конекциите на играчите.
+Кога сите играчи ќе се исклучат од некое Лоби, серверот го брише за да ослободи простор за нови партии.
 
 ---
 
