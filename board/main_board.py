@@ -27,6 +27,7 @@ LIGHT_YELLOW = (255, 240, 170)
 DUEL_BG = (10, 20, 30, 200)
 DUEL_CYAN = BLUE
 DUEL_LIME = GREEN
+NEON_PINk = (255, 16, 240)
 
 PLAYER_COLORS = [PURPLE, GREEN, YELLOW, BLUE]
 
@@ -422,7 +423,7 @@ def draw_quiz_intro_overlay(quiz_bg, language):
     draw_text(screen, text("num_steps", language), win_rect.centerx, win_rect.y + 140, 24, DUEL_CYAN)
     draw_text(screen, text("movement", language), win_rect.centerx, win_rect.y + 200, 18, (150, 150, 150))
     draw_text(screen, text("correct", language), win_rect.centerx, win_rect.y + 240, 22, GREEN)
-    draw_text(screen, text("wrong", language), win_rect.centerx, win_rect.y + 280, 22, RED)
+    draw_text(screen, text("wrong", language), win_rect.centerx, win_rect.y + 280, 22, NEON_PINk)
 
     pygame.display.flip()
 
@@ -518,9 +519,9 @@ def draw_quiz(questions, language):
 
     if timed_out:
         feedback_text = text("times_up", language)
-        feedback_color = RED
+        feedback_color = NEON_PINk
     else:
-        feedback_color = DUEL_LIME if is_correct else RED
+        feedback_color = DUEL_LIME if is_correct else NEON_PINk
         feedback_text = text("yes", language) if is_correct else text("no", language)
 
     flash_rect = win_rect.inflate(-20, -20)
@@ -536,7 +537,7 @@ def draw_duel_overlay(duel_info, current_local_idx, my_player_id, language):
     if current_local_idx >= 5:
         screen.fill(BLACK)
         text_wait = text("wait_for_enemy", language)
-        draw_text(screen, f"{text_wait} (5/5)", WIDTH // 2, HEIGHT // 2, 30, RED)
+        draw_text(screen, f"{text_wait} (5/5)", WIDTH // 2, HEIGHT // 2, 30, NEON_PINk)
         return None
 
     question_data = duel_info["questions"][my_player_id][current_local_idx]
@@ -545,7 +546,7 @@ def draw_duel_overlay(duel_info, current_local_idx, my_player_id, language):
 
 
 def choose_pawn(pawns, language):
-    draw_text(screen, text("chose_pawn", language), 20, HEIGHT - 50, 20, center=False, color=RED)
+    draw_text(screen, text("chose_pawn", language), 20, HEIGHT - 50, 20, center=False, color=NEON_PINk)
     pygame.display.flip()
     selected_pawn = False
     while not selected_pawn:

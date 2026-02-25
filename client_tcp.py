@@ -37,8 +37,8 @@ player_is_ready = False
 last_sync_request_time = 0
 duel_answers = []
 
-# HOST = "127.0.0.1"  # for local
-HOST = "84.8.255.17"  # for cloud
+HOST = "127.0.0.1"  # for local
+# HOST = "84.8.255.17"  # for cloud
 PORT = 62743
 
 COLOR_ENUM = {
@@ -207,7 +207,7 @@ def main():
                                    GREEN, LIGHT_GREEN, mouse_pos)
 
             if server_error_msg:
-                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 110, 28, color=RED)
+                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 110, 28, color=NEON_PINk)
 
 
         elif state == "LANG_SELECT":
@@ -238,7 +238,7 @@ def main():
             draw_text(screen, temp_name + "|", WIDTH // 2, HEIGHT // 2, 42, BLUE)
 
             if server_error_msg:
-                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 100, 24, RED)
+                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 100, 24, NEON_PINk)
 
             draw_text(screen, text("press_enter"), WIDTH // 2, HEIGHT // 2 + 60, 24, WHITE)
 
@@ -312,7 +312,7 @@ def main():
                         btn_ready = draw_button(text("start"), WIDTH // 2 - 100, HEIGHT - 300, 200, 50,
                                                 GREEN, LIGHT_GREEN, mouse_pos)
                     elif my_player_id in (duel["p1"], duel["p2"]):
-                        draw_text(screen, text("waiting_for_opp"), WIDTH // 2, HEIGHT - 60, 28, RED)
+                        draw_text(screen, text("waiting_for_opp"), WIDTH // 2, HEIGHT - 60, 28, NEON_PINk)
                         current_time = time.time()
                         if current_time - last_sync_request_time > 3.0:
                             print("Still in INTRO. Requesting sync...")
@@ -339,9 +339,9 @@ def main():
                         screen.fill(BLACK)
                         duel_text = text("duel")
                         draw_text(screen, f"{duel_text}: {p1_data['name']} vs {p2_data['name']}",
-                                  WIDTH // 2, HEIGHT // 2 - 20, 40, RED)
+                                  WIDTH // 2, HEIGHT // 2 - 20, 40, NEON_PINk)
                         draw_text(screen, text("wait_for_other"),
-                                  WIDTH // 2, HEIGHT // 2 + 40, 28, RED)
+                                  WIDTH // 2, HEIGHT // 2 + 40, 28, NEON_PINk)
 
                 pygame.display.flip()
 
