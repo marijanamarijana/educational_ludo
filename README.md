@@ -2,8 +2,7 @@
 
 ---
 
-**Educational Ludo** is a multiplayer board game for kids or adults that combines the classic Ludo gameplay with fun educational questions.  
-Players compete to reach the finish first while answering quiz questions that test their knowledge and add an extra challenge to every move.
+**Educational Ludo** is a multiplayer board game for kids or adults **(meant for ages 10 and up)** that combines the classic Ludo gameplay with fun educational questions. Players compete to reach the finish first while answering quiz questions that test their knowledge and add an extra challenge to every move.
 Play with up to 4 friends per game, whether you choose the Macedonian or English version it's all up to you! 
 
 The game is designed for:
@@ -53,8 +52,7 @@ the host and start it with the command **python client_tcp.py**. You can also st
 
 ---
 
-**Едукациско не лути се човече** е игра за повеќе играчи за деца и возрасни која ја комбинира класичната игра „Не лути се човече“ со забавни едукативни прашања.
-Играчите се натпреваруваат кој прв ќе стигне до целта, додека одговараат на прашања што го тестираат нивното знаење.
+**Едукациско не лути се човече** е игра за повеќе играчи за деца и возрасни **(наменета за лица со над 10 години)** која ја комбинира класичната игра „Не лути се човече“ со забавни едукативни прашања.Играчите се натпреваруваат кој прв ќе стигне до целта, додека одговараат на прашања што го тестираат нивното знаење.
 Може да се игра со најмногу 4 пријатели во една игра, а дали ќе ја играте македонската или англиската верзија – изборот е ваш!
 
 Играта е наменета за:
