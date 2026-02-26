@@ -27,7 +27,7 @@ LIGHT_YELLOW = (255, 240, 170)
 DUEL_BG = (10, 20, 30, 200)
 DUEL_CYAN = BLUE
 DUEL_LIME = GREEN
-NEON_PINk = (255, 16, 240)
+NEON_PINK = (255, 16, 240)
 
 PLAYER_COLORS = [PURPLE, GREEN, YELLOW, BLUE]
 
@@ -423,7 +423,7 @@ def draw_quiz_intro_overlay(quiz_bg, language):
     draw_text(screen, text("num_steps", language), win_rect.centerx, win_rect.y + 140, 24, DUEL_CYAN)
     draw_text(screen, text("movement", language), win_rect.centerx, win_rect.y + 200, 18, (150, 150, 150))
     draw_text(screen, text("correct", language), win_rect.centerx, win_rect.y + 240, 22, GREEN)
-    draw_text(screen, text("wrong", language), win_rect.centerx, win_rect.y + 280, 22, NEON_PINk)
+    draw_text(screen, text("wrong", language), win_rect.centerx, win_rect.y + 280, 22, NEON_PINK)
 
     pygame.display.flip()
 
@@ -449,21 +449,22 @@ def draw_quiz(questions, language):
     draw_text(screen, text("scenario", language), win_rect.centerx, win_rect.y + 20, 22, BLACK)
 
     y_offset = win_rect.y + 80
-    if len(question) <= 50:
-        draw_text(screen, f"{question}", WIDTH // 2, y_offset, size=24, color=WHITE)
-    else:
-        idx = question[:50].rfind(' ')
-        draw_text(screen, f"{question[:idx]}", WIDTH // 2, y_offset, size=24, color=WHITE)
-        y_offset += 30
-        if len(question[idx:]) <= 50:
-            draw_text(screen, f"{question[idx:]}", WIDTH // 2, y_offset, size=24, color=WHITE)
-        else:
-            idx2 = question[idx:idx + 50].rfind(' ') + idx
-            draw_text(screen, f"{question[idx:idx2]}", WIDTH // 2, y_offset, size=24, color=WHITE)
-            y_offset += 30
-            draw_text(screen, f"{question[idx2:]}", WIDTH // 2, y_offset, size=24, color=WHITE)
 
-    y_offset += 40
+    words = question.split(' ')
+    lines = []
+    current_line = ""
+    for word in words:
+        if len(current_line + word) < 50:
+            current_line += word + " "
+        else:
+            lines.append(current_line)
+            current_line = word + " "
+    lines.append(current_line)
+
+    for i, line in enumerate(lines):
+        draw_text(screen, line, WIDTH // 2, y_offset + (i * 30), 24, WHITE)
+
+    y_offset += 10 + len(lines) * 30
     selected = -1
     timed_out = False
 
@@ -519,9 +520,9 @@ def draw_quiz(questions, language):
 
     if timed_out:
         feedback_text = text("times_up", language)
-        feedback_color = NEON_PINk
+        feedback_color = NEON_PINK
     else:
-        feedback_color = DUEL_LIME if is_correct else NEON_PINk
+        feedback_color = DUEL_LIME if is_correct else NEON_PINK
         feedback_text = text("yes", language) if is_correct else text("no", language)
 
     flash_rect = win_rect.inflate(-20, -20)
@@ -537,7 +538,7 @@ def draw_duel_overlay(duel_info, current_local_idx, my_player_id, language):
     if current_local_idx >= 5:
         screen.fill(BLACK)
         text_wait = text("wait_for_enemy", language)
-        draw_text(screen, f"{text_wait} (5/5)", WIDTH // 2, HEIGHT // 2, 30, NEON_PINk)
+        draw_text(screen, f"{text_wait} (5/5)", WIDTH // 2, HEIGHT // 2, 30, NEON_PINK)
         return None
 
     question_data = duel_info["questions"][my_player_id][current_local_idx]
@@ -546,7 +547,7 @@ def draw_duel_overlay(duel_info, current_local_idx, my_player_id, language):
 
 
 def choose_pawn(pawns, language):
-    draw_text(screen, text("chose_pawn", language), 20, HEIGHT - 50, 20, center=False, color=NEON_PINk)
+    draw_text(screen, text("chose_pawn", language), 20, HEIGHT - 50, 20, center=False, color=NEON_PINK)
     pygame.display.flip()
     selected_pawn = False
     while not selected_pawn:
@@ -555,3 +556,53 @@ def choose_pawn(pawns, language):
                 for pawn, idx in pawns:
                     if pawn.collidepoint(event.pos):
                         return idx
+
+
+def draw_tips_icon(mouse_pos):
+    rect = pygame.Rect(WIDTH - 60, 20, 45, 45)
+    is_hover = rect.collidepoint(mouse_pos)
+
+    color = GRAY if is_hover else DUEL_CYAN
+    pygame.draw.rect(screen, color, rect, border_radius=8)
+    pygame.draw.rect(screen, WHITE, rect, 2, border_radius=8)
+
+    pygame.draw.line(screen, WHITE, (rect.x + 10, rect.y + 12), (rect.x + 35, rect.y + 12), 2)
+    pygame.draw.line(screen, WHITE, (rect.x + 10, rect.y + 22), (rect.x + 35, rect.y + 22), 2)
+    pygame.draw.line(screen, WHITE, (rect.x + 10, rect.y + 32), (rect.x + 25, rect.y + 32), 2)
+
+    return rect
+
+
+def draw_tips_overlay(tip_text, mouse_pos, language):
+    win_w, win_h = 700, 300
+    win_rect = pygame.Rect((WIDTH - win_w) // 2, (HEIGHT - win_h) // 2, win_w, win_h)
+
+    pygame.draw.rect(screen, (5, 15, 25), win_rect, border_radius=15)
+    pygame.draw.rect(screen, DUEL_CYAN, win_rect, 3, border_radius=15)
+
+    header_rect = pygame.Rect(win_rect.x, win_rect.y, win_w, 40)
+    pygame.draw.rect(screen, DUEL_CYAN, header_rect, border_top_left_radius=15, border_top_right_radius=15)
+    draw_text(screen, text("tips", language), win_rect.centerx, win_rect.y + 20, 22, BLACK)
+
+    y_offset = win_rect.y + 100
+    words = tip_text.split(' ')
+    lines = []
+    current_line = ""
+    for word in words:
+        if len(current_line + word) < 45:
+            current_line += word + " "
+        else:
+            lines.append(current_line)
+            current_line = word + " "
+    lines.append(current_line)
+
+    for i, line in enumerate(lines):
+        draw_text(screen, line, WIDTH // 2, y_offset + (i * 35), 24, WHITE)
+
+    btn_prev = draw_button("<<", win_rect.x + 50, win_rect.bottom - 80, 120, 45, DUEL_CYAN, DUEL_CYAN, mouse_pos)
+    btn_next = draw_button(">>", win_rect.right - 170, win_rect.bottom - 80, 120, 45, DUEL_CYAN, DUEL_CYAN,
+                           mouse_pos)
+
+    btn_close = draw_button("X", win_rect.right - 45, win_rect.top + 5, 40, 30, NEON_PINK, GRAY, mouse_pos)
+
+    return btn_prev, btn_next, btn_close

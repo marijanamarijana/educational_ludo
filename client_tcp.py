@@ -1,6 +1,4 @@
 import json, threading, socket
-import os
-import sys
 import time
 import pygame.time
 
@@ -11,6 +9,8 @@ from data.multiple_choice_questions_mk import questions as multiple_choice_quest
 from data.true_false_questions_mk import questions as true_false_questions_mk
 from data.multiple_choice_questions_en import questions as multiple_choice_questions_en
 from data.true_false_questions_en import questions as true_false_questions_en
+from data.question_tips_en import tips as tips_en
+from data.question_tips_mk import tips as tips_mk
 from board.main_board import PURPLE, GREEN, BLUE, YELLOW
 from data.lang import TEXT
 
@@ -36,6 +36,8 @@ temp_name = ""
 player_is_ready = False
 last_sync_request_time = 0
 duel_answers = []
+show_tips = False
+current_tip_idx = 0
 
 HOST = "127.0.0.1"  # for local
 # HOST = "84.8.255.17"  # for cloud
@@ -53,6 +55,12 @@ ALL_QUESTIONS = {
     "en": list(multiple_choice_questions_en + true_false_questions_en),
 }
 questions = ALL_QUESTIONS[language]
+
+ALL_TIPS = {
+    "mk": tips_mk,
+    "en": tips_en,
+}
+tips = ALL_TIPS[language]
 quiz_bg_image = load_assets()
 
 
@@ -173,7 +181,7 @@ def reset_local_game_data():
 
 
 def main():
-    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions, trigger_roll, language, player_is_ready, last_sync_request_time, duel_answers
+    global kill, player_name, player_color, game_state, my_player_id, server_error_msg, state, players_list, rolled_dice, questions, trigger_roll, language, player_is_ready, last_sync_request_time, duel_answers, show_tips, current_tip_idx, tips
 
     connect()
     state = "LANG_SELECT"
@@ -207,7 +215,7 @@ def main():
                                    GREEN, LIGHT_GREEN, mouse_pos)
 
             if server_error_msg:
-                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 110, 28, color=NEON_PINk)
+                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 110, 28, color=NEON_PINK)
 
 
         elif state == "LANG_SELECT":
@@ -238,7 +246,7 @@ def main():
             draw_text(screen, temp_name + "|", WIDTH // 2, HEIGHT // 2, 42, BLUE)
 
             if server_error_msg:
-                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 100, 24, NEON_PINk)
+                draw_text(screen, server_error_msg, WIDTH // 2, HEIGHT // 2 + 100, 24, NEON_PINK)
 
             draw_text(screen, text("press_enter"), WIDTH // 2, HEIGHT // 2 + 60, 24, WHITE)
 
@@ -312,7 +320,7 @@ def main():
                         btn_ready = draw_button(text("start"), WIDTH // 2 - 100, HEIGHT - 300, 200, 50,
                                                 GREEN, LIGHT_GREEN, mouse_pos)
                     elif my_player_id in (duel["p1"], duel["p2"]):
-                        draw_text(screen, text("waiting_for_opp"), WIDTH // 2, HEIGHT - 60, 28, NEON_PINk)
+                        draw_text(screen, text("waiting_for_opp"), WIDTH // 2, HEIGHT - 60, 28, NEON_PINK)
                         current_time = time.time()
                         if current_time - last_sync_request_time > 3.0:
                             print("Still in INTRO. Requesting sync...")
@@ -339,9 +347,9 @@ def main():
                         screen.fill(BLACK)
                         duel_text = text("duel")
                         draw_text(screen, f"{duel_text}: {p1_data['name']} vs {p2_data['name']}",
-                                  WIDTH // 2, HEIGHT // 2 - 20, 40, NEON_PINk)
+                                  WIDTH // 2, HEIGHT // 2 - 20, 40, NEON_PINK)
                         draw_text(screen, text("wait_for_other"),
-                                  WIDTH // 2, HEIGHT // 2 + 40, 28, NEON_PINk)
+                                  WIDTH // 2, HEIGHT // 2 + 40, 28, NEON_PINK)
 
                 pygame.display.flip()
 
@@ -379,6 +387,10 @@ def main():
                     active_rects[p.name] = p.draw(screen, bx, by)
 
                 opp_id, my_p_idx, opp_p_idx = client_check_duel(players, active_rects)
+
+                tips_btn = draw_tips_icon(mouse_pos)
+                if show_tips:
+                    prev_btn, next_btn, close_btn = draw_tips_overlay(tips[current_tip_idx], mouse_pos, language)
 
                 if not game_state["moving"]:
                     if opp_id is not None:
@@ -432,10 +444,12 @@ def main():
                 if btn_mk.collidepoint(event.pos):
                     language = "mk"
                     questions = ALL_QUESTIONS[language]
+                    tips = ALL_TIPS[language]
                     state = "MENU"
                 elif btn_en.collidepoint(event.pos):
                     language = "en"
                     questions = ALL_QUESTIONS[language]
+                    tips = ALL_TIPS[language]
                     state = "MENU"
 
             elif state == "CREATE" and event.type == pygame.MOUSEBUTTONDOWN:
@@ -494,6 +508,19 @@ def main():
                         network_send({"type": "start_game"})
 
             elif state == "PLAYING" and event.type == pygame.MOUSEBUTTONDOWN:
+                if tips_btn.collidepoint(event.pos):
+                    show_tips = not show_tips
+                    continue
+
+                if show_tips:
+                    if next_btn.collidepoint(event.pos):
+                        current_tip_idx = (current_tip_idx + 1) % len(tips)
+                    elif prev_btn.collidepoint(event.pos):
+                        current_tip_idx = (current_tip_idx - 1) % len(tips)
+                    elif close_btn.collidepoint(event.pos):
+                        show_tips = False
+                    continue
+
                 if duel.get("active") and duel.get("phase") == "QUIZ":
                     continue
 

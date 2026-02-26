@@ -245,4 +245,50 @@ questions = (
             "Without rules.",
         )
     },
+    {
+        "question": "You receive a message with a link saying you won a free prize.",
+        "answer": 1,
+        "options": (
+            "I'll click it to see what I won.",
+            "I'll ignore it and delete the message because it might be a virus.",
+            "I'll send it to all my friends so they can win too."
+        )
+    },
+    {
+        "question": "You are setting up a new social media profile.",
+        "answer": 1,
+        "options": (
+            "It's best to make it public so everyone can see my posts.",
+            "It's best to make it private so only people I know and approve can see my content.",
+            "Privacy settings aren't really important."
+        )
+    },
+    {
+        "question": "A game asks you to spend real money to buy a new character skin.",
+        "answer": 0,
+        "options": (
+            "I'll ask my parents if they can buy it for me.",
+            "I'll use a saved credit card without asking.",
+            "I'll find a website that promises free skins if I log in with my account."
+        )
+    },
+    {
+        "question": "Is it okay to download a new game from a website you’ve never heard of?",
+        "answer": 1,
+        "options": (
+            "Yes, if the game looks fun.",
+            "No, because it could contain viruses.",
+            "Yes, as long as it is free.",
+            "Yes, if the website doesn't ask for my login information."
+        )
+    },
+    {
+        "question": "You have been playing games for two hours and your eyes are starting to feel tired.",
+        "answer": 1,
+        "options": (
+            "I'll keep playing until I finish the level.",
+            "I'll take a break and go do something active away from the screen.",
+            "I'll turn up the brightness so I can see better."
+        )
+    }
 )

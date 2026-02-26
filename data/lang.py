@@ -41,6 +41,7 @@ TEXT = {
         "lang_title": "Избери јазик",
         "lang_mk": "Македонски",
         "lang_en": "English",
+        "tips": "УПАТСТВО",
     },
 
     "en": {
@@ -85,5 +86,6 @@ TEXT = {
         "lang_title": "Choose language",
         "lang_mk": "Macedonian",
         "lang_en": "English",
+        "tips": "TIPS",
     }
 }

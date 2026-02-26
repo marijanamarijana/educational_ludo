@@ -1,0 +1,11 @@
+tips = ("Only accept friend requests from people you already know and trust in real life.",
+        "Never share your home address, phone number, or the name of your school online.",
+        "Create passwords using random letters, numbers, and symbols instead of things like your name or birthday.",
+        "Keep your passwords a secret from everyone except your parents.",
+        "Use a different password for every one of your accounts.",
+        "Always treat others with respect and kindness online.",
+        "If someone is being mean, do not insult them back. Instead, report the behavior and tell a trusted adult.",
+        "Never agree to meet someone in person that you only met online, as it is not safe",
+        "Remember that anything you post online can be saved forever and seen by anyone.",
+        "Don't open links that promise to give you a free reward.",
+        )
