@@ -19,7 +19,8 @@ The gameplay follows classic Ludo rules:
 
 What separates it from a classic Ludo is:
 - While playing you can click on the QUIZ button that will prompt you to pick a number between 1-6 which will then (let's say u selected 4) if answering correctly move u up 4 tiles but if answering wrong your pawn will be moved 4 tiles backwards
-- If u and an opponent both are on a tile - a DUEL occurs, you and your opponent answer questions as fast and as correctly as you can. The person with the most correctly answered questions in the short amount of time WINS the duel and stays on the tile, the losing pawn returns to it's home base 
+- If u and an opponent both are on a tile - a DUEL occurs, you and your opponent answer questions as fast and as correctly as you can. The person with the most correctly answered questions in the short amount of time WINS the duel and stays on the tile, the losing pawn returns to it's home base
+- Players can read the question answering tips located in the top right corner which helps them learn basic internet safety rules that will help them answer the quizzes
 
 ---
 
@@ -75,6 +76,7 @@ the host and start it with the command **python client_tcp.py**. You can also st
 Вие и противникот одговарате на прашања што е можно побрзо и поточно.
 Играчот со најмногу точно одговорени прашања во краткиот временски период е победник на дуелот и останува на полето,
 додека фигурата на поразениот се враќа во почетната база.
+- Играчите може да го прочитаат упатството за одговарање на прашањата лоцирано во десниот горен агол, кој ќе им помогне да научат основни правила за безбедно користење на интернет и полесно одговарање на квизовите.
 
 ---
 
